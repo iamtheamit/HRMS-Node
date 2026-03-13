@@ -1,0 +1,112 @@
+// schema.prisma
+// This Prisma schema defines the PostgreSQL database models and relationships for the HRMS backend.
+// It is responsible for structuring entities like User, Employee, Department, Attendance, and LeaveRequest and mapping them to the database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  role      UserRole  @default(EMPLOYEE)
+  employee  Employee?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Department {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  description String?
+  employees   Employee[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Employee {
+  id             Int            @id @default(autoincrement())
+  firstName      String
+  lastName       String
+  email          String         @unique
+  phone          String?
+  hireDate       DateTime       @default(now())
+  status         EmploymentStatus @default(ACTIVE)
+  departmentId   Int?
+  department     Department?    @relation(fields: [departmentId], references: [id])
+  userId         Int?           @unique
+  user           User?          @relation(fields: [userId], references: [id])
+  managerId      Int?
+  manager        Employee?      @relation("EmployeeManager", fields: [managerId], references: [id])
+  subordinates   Employee[]     @relation("EmployeeManager")
+  attendances    Attendance[]
+  leaveRequests  LeaveRequest[]
+  approvedLeaves LeaveRequest[] @relation("LeaveApprover")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Attendance {
+  id         Int              @id @default(autoincrement())
+  employeeId Int
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  date       DateTime
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     AttendanceStatus @default(PRESENT)
+  createdAt  DateTime         @default(now())
+}
+
+model LeaveRequest {
+  id         Int          @id @default(autoincrement())
+  employeeId Int
+  employee   Employee     @relation(fields: [employeeId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  type       LeaveType
+  status     LeaveStatus  @default(PENDING)
+  reason     String?
+  approverId Int?
+  approver   Employee?    @relation("LeaveApprover", fields: [approverId], references: [id])
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
