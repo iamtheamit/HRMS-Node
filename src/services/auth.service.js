@@ -11,6 +11,7 @@ const permissionRepository = require('../repositories/permission.repository');
 const ApiError = require('../utils/apiError');
 const StatusCodes = require('../constants/statusCodes');
 const { AUTH_MESSAGES } = require('../constants/messages');
+const emailService = require('./email/email.service');
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRES = '15m';
@@ -64,6 +65,14 @@ const register = async ({ email, password, role = 'EMPLOYEE', firstName, lastNam
 
   const { password: _, ...safeUser } = user;
   // In production, send activation email with activationToken
+  try {
+    const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const activationLink = `${appUrl}/api/auth/activate?token=${activationToken}`;
+    // fire-and-forget; errors are logged inside the service
+    emailService.sendAccountActivationEmail(user, activationLink).catch((err) => console.error('Activation email failed:', err));
+  } catch (err) {
+    console.error('prepare activation email failed:', err);
+  }
   return safeUser;
 };
 
