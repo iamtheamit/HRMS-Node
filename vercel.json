@@ -4,7 +4,10 @@
   "buildCommand": "npm run build",
   "functions": {
     "api/index.js": {
-      "includeFiles": "node_modules/.prisma/client/**"
+      "includeFiles": [
+        "node_modules/.prisma/client/**",
+        "node_modules/swagger-ui-dist/**"
+      ]
     }
   },
   "rewrites": [
