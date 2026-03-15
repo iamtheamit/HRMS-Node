@@ -3,10 +3,10 @@
 // It is responsible for interacting with Prisma to manage LeaveRequest records in the database.
 
 const prisma = require('../config/prisma');
-const { v4: uuidv4 } = require('uuid');
+const uuidv7 = require('../utils/uuidv7');
 
 const createLeaveRequest = (data) => {
-  const payload = data && data.id ? data : { id: uuidv4(), ...data };
+  const payload = data && data.id ? data : { id: uuidv7(), ...data };
   return prisma.leaveRequest.create({
     data: payload,
     include: {

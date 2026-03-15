@@ -3,10 +3,10 @@
 // It is responsible for interacting with Prisma to manage Attendance records in the database.
 
 const prisma = require('../config/prisma');
-const { v4: uuidv4 } = require('uuid');
+const uuidv7 = require('../utils/uuidv7');
 
 const createAttendance = (data) => {
-  const payload = data && data.id ? data : { id: uuidv4(), ...data };
+  const payload = data && data.id ? data : { id: uuidv7(), ...data };
   return prisma.attendance.create({
     data: payload,
     include: {

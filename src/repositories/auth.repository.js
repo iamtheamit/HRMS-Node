@@ -3,7 +3,7 @@
 // It is responsible for interacting with the Prisma client to manage User records in the database.
 
 const prisma = require('../config/prisma');
-const { v4: uuidv4 } = require('uuid');
+// uuid v7 is provided via ESM export; import dynamically when generating IDs
 
 const findUserByEmail = (email) => {
   return prisma.user.findUnique({
@@ -23,8 +23,10 @@ const findUserById = (id) => {
   });
 };
 
+const uuidv7 = require('../utils/uuidv7');
+
 const createUser = (data) => {
-  const payload = data && data.id ? data : { id: uuidv4(), ...data };
+  const payload = data && data.id ? data : { id: uuidv7(), ...data };
   return prisma.user.create({
     data: payload,
   });
