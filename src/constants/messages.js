@@ -9,6 +9,16 @@ const AUTH_MESSAGES = {
   REGISTER_SUCCESS: 'User registered successfully',
   INVALID_CREDENTIALS: 'Invalid email or password',
   EMAIL_ALREADY_REGISTERED: 'Email is already registered',
+  REFRESH_SUCCESS: 'Token refreshed successfully',
+  LOGOUT_SUCCESS: 'Logged out successfully',
+  LOGOUT_ALL_SUCCESS: 'Logged out from all devices successfully',
+  ACCOUNT_INACTIVE: 'Account is not activated',
+  ACTIVATION_SUCCESS: 'Account activated successfully',
+  INVALID_ACTIVATION_TOKEN: 'Invalid activation token',
+  RESET_REQUEST_SUCCESS: 'If the email exists, a reset link has been sent',
+  RESET_SUCCESS: 'Password has been reset successfully',
+  INVALID_RESET_TOKEN: 'Invalid or expired reset token',
+  REFRESH_EXPIRED: 'Refresh token expired',
 };
 
 const EMPLOYEE_MESSAGES = {

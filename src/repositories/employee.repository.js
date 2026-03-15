@@ -3,10 +3,12 @@
 // It is responsible for interacting with Prisma to manage Employee and Department records in the database.
 
 const prisma = require('../config/prisma');
+const { v4: uuidv4 } = require('uuid');
 
 const createEmployee = (data) => {
+  const payload = data && data.id ? data : { id: uuidv4(), ...data };
   return prisma.employee.create({
-    data,
+    data: payload,
     include: {
       department: true,
       user: true,

@@ -6,7 +6,7 @@ const BaseDTO = require('./base.dto');
 
 class RegisterDTO extends BaseDTO {
   constructor(data) {
-    super(data, ['email', 'password', 'role']);
+    super(data, ['email', 'password', 'role', 'firstName', 'lastName']);
   }
 }
 
