@@ -21,10 +21,6 @@ class CreateLeaveDTO extends BaseDTO {
 class LeaveFilterDTO extends BaseDTO {
   constructor(query) {
     super(query, ['employeeId', 'status']);
-
-    if (this.employeeId !== undefined) {
-      this.employeeId = parseInt(this.employeeId, 10);
-    }
   }
 }
 

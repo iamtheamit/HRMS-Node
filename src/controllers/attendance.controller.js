@@ -31,7 +31,7 @@ const checkOut = async (req, res, next) => {
 const listAttendance = async (req, res, next) => {
   try {
     const filterDto = new AttendanceFilterDTO(req.query);
-    const records = await attendanceService.listAttendance(filterDto);
+    const records = await attendanceService.listAttendance(filterDto, req.user);
     return sendSuccess(
       res,
       ATTENDANCE_MESSAGES.FETCH_ALL_SUCCESS,

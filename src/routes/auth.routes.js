@@ -20,7 +20,8 @@ const router = express.Router();
  *       type: object
  *       properties:
  *         id:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *         email:
  *           type: string
  *         firstName:
@@ -268,6 +269,23 @@ router.post('/reset-password-request', authController.resetPasswordRequest);
  *               $ref: '#/components/schemas/ApiResponse'
  */
 router.post('/reset-password', authController.resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/activate:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Activate account via emailed token link
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend login after successful activation
+ */
 
 // Support activation via emailed link (GET /api/auth/activate?token=...)
 router.get('/activate', authController.activateAccount);

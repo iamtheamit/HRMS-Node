@@ -3,6 +3,7 @@
 // It is responsible for enforcing daily attendance rules and delegating persistence to the attendance repository.
 
 const attendanceRepository = require('../repositories/attendance.repository');
+const employeeRepository = require('../repositories/employee.repository');
 const ApiError = require('../utils/apiError');
 const StatusCodes = require('../constants/statusCodes');
 const { ATTENDANCE_MESSAGES } = require('../constants/messages');
@@ -16,6 +17,10 @@ const getDayRange = (date = new Date()) => {
 };
 
 const checkIn = async (employeeId) => {
+  if (!employeeId) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden: employee profile missing');
+  }
+
   const { start, end } = getDayRange();
 
   const existing = await attendanceRepository.findAttendanceByEmployeeAndDate(
@@ -44,6 +49,10 @@ const checkIn = async (employeeId) => {
 };
 
 const checkOut = async (employeeId) => {
+  if (!employeeId) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden: employee profile missing');
+  }
+
   const { start, end } = getDayRange();
 
   const existing = await attendanceRepository.findAttendanceByEmployeeAndDate(
@@ -67,8 +76,43 @@ const checkOut = async (employeeId) => {
   return updated;
 };
 
-const listAttendance = async (filters = {}) => {
-  const records = await attendanceRepository.listAttendance(filters);
+const listAttendance = async (filters = {}, actor) => {
+  if (!actor) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized');
+
+  const scopedFilters = { ...filters };
+
+  if (actor.role === 'SUPER_ADMIN' || actor.role === 'HR_ADMIN') {
+    const records = await attendanceRepository.listAttendance(scopedFilters);
+    return records;
+  }
+
+  if (!actor.employeeId) {
+    return [];
+  }
+
+  if (actor.role === 'MANAGER') {
+    const subordinates = await employeeRepository.getSubordinates(actor.employeeId);
+    const allowedIds = [actor.employeeId, ...subordinates.map((employee) => employee.id)];
+
+    if (scopedFilters.employeeId && !allowedIds.includes(scopedFilters.employeeId)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden: outside your team scope');
+    }
+
+    scopedFilters.employeeId = scopedFilters.employeeId
+      ? scopedFilters.employeeId
+      : { in: allowedIds };
+
+    const records = await attendanceRepository.listAttendance(scopedFilters);
+    return records;
+  }
+
+  if (scopedFilters.employeeId && scopedFilters.employeeId !== actor.employeeId) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden: self scope only');
+  }
+
+  scopedFilters.employeeId = actor.employeeId;
+
+  const records = await attendanceRepository.listAttendance(scopedFilters);
   return records;
 };
 

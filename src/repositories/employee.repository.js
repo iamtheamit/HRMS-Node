@@ -25,6 +25,16 @@ const getEmployees = () => {
   });
 };
 
+const getSubordinates = (managerId) => {
+  return prisma.employee.findMany({
+    where: { managerId },
+    include: {
+      department: true,
+      user: true,
+    },
+  });
+};
+
 const getEmployeeById = (id) => {
   return prisma.employee.findUnique({
     where: { id },
@@ -55,6 +65,7 @@ const deleteEmployee = (id) => {
 module.exports = {
   createEmployee,
   getEmployees,
+  getSubordinates,
   getEmployeeById,
   updateEmployee,
   deleteEmployee,

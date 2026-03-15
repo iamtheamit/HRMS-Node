@@ -11,6 +11,7 @@ const permissionRepository = require('../repositories/permission.repository');
 const ApiError = require('../utils/apiError');
 const StatusCodes = require('../constants/statusCodes');
 const { AUTH_MESSAGES } = require('../constants/messages');
+const { ROLE_DEFAULT_PERMISSIONS } = require('../constants/permissions');
 const emailService = require('./email/email.service');
 const {
   apiBaseUrl,
@@ -20,6 +21,17 @@ const {
 } = require('../config/app');
 
 const SALT_ROUNDS = 10;
+
+const toSafeUser = (user) => {
+  if (!user) return null;
+
+  const { password: _, ...safeUser } = user;
+
+  return {
+    ...safeUser,
+    employeeId: user.employee ? user.employee.id : null,
+  };
+};
 
 const createAccessToken = (user, sessionId) => {
   const payload = {
@@ -67,7 +79,7 @@ const register = async ({ email, password, role = 'EMPLOYEE', firstName, lastNam
     isActive: false,
   });
 
-  const { password: _, ...safeUser } = user;
+  const safeUser = toSafeUser(user);
   // In production, send activation email with activationToken
   try {
     const activationLink = `${apiBaseUrl.replace(/\/$/, '')}/api/auth/activate?token=${activationToken}`;
@@ -104,7 +116,7 @@ const login = async ({ email, password, deviceInfo = '', ipAddress = '' }) => {
   const refreshTokenString = buildRefreshTokenString(createdSession.id, rawRefresh);
   const accessToken = createAccessToken(user, createdSession.id);
 
-  const { password: _, ...safeUser } = user;
+  const safeUser = toSafeUser(user);
   return {
     accessToken,
     refreshToken: refreshTokenString,
@@ -198,8 +210,7 @@ const resetPassword = async (token, newPassword) => {
 const getUserById = async (userId) => {
   const user = await authRepository.findUserById(userId);
   if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
-  const { password: _, ...safeUser } = user;
-  return safeUser;
+  return toSafeUser(user);
 };
 
 // Permission helpers
@@ -208,6 +219,10 @@ const userHasPermission = async (userId, permissionName) => {
   const user = await authRepository.findUserById(userId);
   if (!user) return false;
   if (user.role === 'SUPER_ADMIN') return true;
+
+  // Role defaults are always active.
+  const roleDefaults = ROLE_DEFAULT_PERMISSIONS[user.role] || [];
+  if (roleDefaults.includes(permissionName)) return true;
 
   const perm = await permissionRepository.findByName(permissionName);
   if (!perm) return false;

@@ -5,14 +5,108 @@
 const express = require('express');
 const attendanceController = require('../controllers/attendance.controller');
 const authMiddleware = require('../middleware/auth.middleware');
+const permissionMiddleware = require('../middleware/permission.middleware');
+const { PERMISSIONS } = require('../constants/permissions');
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Attendance
+ *     description: Attendance check-in/check-out and listing
+ *
+ * components:
+ *   schemas:
+ *     Attendance:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         employeeId:
+ *           type: string
+ *           format: uuid
+ *         date:
+ *           type: string
+ *           format: date-time
+ *         checkIn:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         checkOut:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         status:
+ *           type: string
+ *           enum: [PRESENT, ABSENT, LATE, HALF_DAY]
+ */
+
+/**
+ * @swagger
+ * /api/attendance/check-in:
+ *   post:
+ *     tags: [Attendance]
+ *     summary: Check in for the current employee
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Checked in successfully
+ */
+
+/**
+ * @swagger
+ * /api/attendance/check-out:
+ *   post:
+ *     tags: [Attendance]
+ *     summary: Check out for the current employee
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Checked out successfully
+ */
+
+/**
+ * @swagger
+ * /api/attendance:
+ *   get:
+ *     tags: [Attendance]
+ *     summary: List attendance records in actor scope
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: employeeId
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Optional employee filter (subject to actor scope)
+ *     responses:
+ *       200:
+ *         description: Attendance list fetched
+ */
+
 router.use(authMiddleware);
 
-router.post('/check-in', attendanceController.checkIn);
-router.post('/check-out', attendanceController.checkOut);
-router.get('/', attendanceController.listAttendance);
+router.post(
+	'/check-in',
+	permissionMiddleware(PERMISSIONS.ATTENDANCE_CHECK_IN),
+	attendanceController.checkIn,
+);
+router.post(
+	'/check-out',
+	permissionMiddleware(PERMISSIONS.ATTENDANCE_CHECK_OUT),
+	attendanceController.checkOut,
+);
+router.get(
+	'/',
+	permissionMiddleware(PERMISSIONS.ATTENDANCE_LIST),
+	attendanceController.listAttendance,
+);
 
 module.exports = router;
 

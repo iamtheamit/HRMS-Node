@@ -20,10 +20,41 @@ const { corsOrigins } = require('./config/app');
 
 const app = express();
 
+const normalizeOrigin = (value) => {
+  if (!value) return '';
+
+  try {
+    const parsed = new URL(value);
+    return parsed.origin.toLowerCase();
+  } catch (error) {
+    return String(value).trim().replace(/\/$/, '').toLowerCase();
+  }
+};
+
+const allowedOrigins = new Set(corsOrigins.map(normalizeOrigin).filter(Boolean));
+
+const isLocalLoopbackOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return ['localhost', '127.0.0.1'].includes(parsed.hostname.toLowerCase());
+  } catch (error) {
+    return false;
+  }
+};
+
 const corsOptions = {
   credentials: true,
   origin(origin, callback) {
-    if (!origin || corsOrigins.length === 0 || corsOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.size === 0) {
+      return callback(null, true);
+    }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.has(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    if (process.env.NODE_ENV !== 'production' && isLocalLoopbackOrigin(normalizedOrigin)) {
       return callback(null, true);
     }
 

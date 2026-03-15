@@ -27,7 +27,7 @@ const createLeaveRequest = async (req, res, next) => {
 const listLeaveRequests = async (req, res, next) => {
   try {
     const filterDto = new LeaveFilterDTO(req.query);
-    const requests = await leaveService.listLeaveRequests(filterDto);
+    const requests = await leaveService.listLeaveRequests(filterDto, req.user);
     return sendSuccess(res, LEAVE_MESSAGES.FETCH_ALL_SUCCESS, requests, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -36,9 +36,9 @@ const listLeaveRequests = async (req, res, next) => {
 
 const approveLeaveRequest = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = req.params.id;
     const approverId = req.user.employeeId;
-    const updated = await leaveService.approveLeaveRequest(id, approverId);
+    const updated = await leaveService.approveLeaveRequest(id, approverId, req.user);
     return sendSuccess(res, LEAVE_MESSAGES.APPROVE_SUCCESS, updated, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -47,9 +47,9 @@ const approveLeaveRequest = async (req, res, next) => {
 
 const rejectLeaveRequest = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = req.params.id;
     const approverId = req.user.employeeId;
-    const updated = await leaveService.rejectLeaveRequest(id, approverId);
+    const updated = await leaveService.rejectLeaveRequest(id, approverId, req.user);
     return sendSuccess(res, LEAVE_MESSAGES.REJECT_SUCCESS, updated, StatusCodes.OK);
   } catch (err) {
     return next(err);

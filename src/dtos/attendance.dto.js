@@ -7,10 +7,6 @@ const BaseDTO = require('./base.dto');
 class AttendanceFilterDTO extends BaseDTO {
   constructor(query) {
     super(query, ['employeeId']);
-
-    if (this.employeeId !== undefined) {
-      this.employeeId = parseInt(this.employeeId, 10);
-    }
   }
 }
 

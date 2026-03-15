@@ -29,6 +29,7 @@ const authMiddleware = async (req, res, next) => {
       userId: user.id,
       email: user.email,
       role: user.role,
+      employeeId: user.employee ? user.employee.id : null,
     };
     return next();
   } catch (err) {

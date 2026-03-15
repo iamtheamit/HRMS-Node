@@ -20,7 +20,7 @@ const createEmployee = async (req, res, next) => {
 
 const getEmployees = async (req, res, next) => {
   try {
-    const employees = await employeeService.listEmployees();
+    const employees = await employeeService.listEmployees(req.user);
     return sendSuccess(res, EMPLOYEE_MESSAGES.FETCH_ALL_SUCCESS, employees, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -29,8 +29,8 @@ const getEmployees = async (req, res, next) => {
 
 const getEmployeeById = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    const employee = await employeeService.getEmployee(id);
+    const id = req.params.id;
+    const employee = await employeeService.getEmployee(id, req.user);
     return sendSuccess(res, EMPLOYEE_MESSAGES.FETCH_ONE_SUCCESS, employee, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -39,9 +39,9 @@ const getEmployeeById = async (req, res, next) => {
 
 const updateEmployee = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = req.params.id;
     const dto = new UpdateEmployeeDTO(req.body);
-    const employee = await employeeService.updateEmployee(id, dto);
+    const employee = await employeeService.updateEmployee(id, dto, req.user);
     return sendSuccess(res, EMPLOYEE_MESSAGES.UPDATE_SUCCESS, employee, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -50,8 +50,8 @@ const updateEmployee = async (req, res, next) => {
 
 const deleteEmployee = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    await employeeService.deleteEmployee(id);
+    const id = req.params.id;
+    await employeeService.deleteEmployee(id, req.user);
     return sendSuccess(res, EMPLOYEE_MESSAGES.DELETE_SUCCESS, null, StatusCodes.NO_CONTENT);
   } catch (err) {
     return next(err);
