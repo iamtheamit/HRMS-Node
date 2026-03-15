@@ -5,6 +5,21 @@ let app;
 
 module.exports = async (req, res) => {
 	try {
+		const forwardedPath = req.query && req.query.__path;
+		if (forwardedPath) {
+			const queryEntries = Object.entries(req.query || {}).filter(([key]) => key !== '__path');
+			const search = new URLSearchParams();
+			queryEntries.forEach(([key, value]) => {
+				if (Array.isArray(value)) {
+					value.forEach((item) => search.append(key, String(item)));
+				} else if (value !== undefined) {
+					search.append(key, String(value));
+				}
+			});
+
+			req.url = `/${String(forwardedPath).replace(/^\/+/, '')}${search.toString() ? `?${search.toString()}` : ''}`;
+		}
+
 		if (!app) {
 			app = require('../src/app');
 		}
