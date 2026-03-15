@@ -1,5 +1,5 @@
 const prisma = require('../config/prisma');
-const uuidv7 = require('../utils/uuidv7');
+const uuidv7 = require('../utils/uuidv7-official');
 
 const createSession = (data) => {
   const payload = data && data.id ? data : { id: uuidv7(), ...data };
