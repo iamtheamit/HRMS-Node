@@ -28,12 +28,24 @@ const EMPLOYEE_MESSAGES = {
   FETCH_ONE_SUCCESS: 'Employee fetched successfully',
   UPDATE_SUCCESS: 'Employee updated successfully',
   DELETE_SUCCESS: 'Employee deleted successfully',
+  BLOCK_SUCCESS: 'Employee blocked successfully',
+  LIFECYCLE_DELETE_SUCCESS: 'Employee soft deleted successfully',
   NOT_FOUND: 'Employee not found',
+};
+
+const DEPARTMENT_MESSAGES = {
+  CREATE_SUCCESS: 'Department created successfully',
+  FETCH_ALL_SUCCESS: 'Departments fetched successfully',
+  UPDATE_SUCCESS: 'Department updated successfully',
+  NOT_FOUND: 'Department not found',
+  NAME_EXISTS: 'Department name already exists',
+  HEAD_MUST_BELONG_TO_DEPARTMENT: 'Department head must belong to this department',
 };
 
 const ATTENDANCE_MESSAGES = {
   CHECK_IN_SUCCESS: 'Check-in successful',
   CHECK_OUT_SUCCESS: 'Check-out successful',
+  PUNCH_SUCCESS: 'Attendance updated successfully',
   FETCH_ALL_SUCCESS: 'Attendance records fetched successfully',
   ALREADY_CHECKED_IN: 'Employee already checked in for today',
   NO_CHECKIN_FOUND: 'No check-in record found for today',
@@ -49,6 +61,10 @@ const LEAVE_MESSAGES = {
   ONLY_PENDING_MUTABLE: 'Only pending leave requests can be modified',
 };
 
+const MEDIA_MESSAGES = {
+  UPLOAD_SUCCESS: 'Media uploaded successfully',
+};
+
 const COMMON_MESSAGES = {
   HEALTH_OK: 'HRMS API is running',
   ROUTE_NOT_FOUND: 'Route not found',
@@ -58,8 +74,10 @@ const COMMON_MESSAGES = {
 module.exports = {
   AUTH_MESSAGES,
   EMPLOYEE_MESSAGES,
+  DEPARTMENT_MESSAGES,
   ATTENDANCE_MESSAGES,
   LEAVE_MESSAGES,
+  MEDIA_MESSAGES,
   COMMON_MESSAGES,
 };
 

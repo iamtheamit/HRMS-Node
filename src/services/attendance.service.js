@@ -76,6 +76,27 @@ const checkOut = async (employeeId) => {
   return updated;
 };
 
+const punch = async (employeeId) => {
+  if (!employeeId) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden: employee profile missing');
+  }
+
+  const { start, end } = getDayRange();
+  const existing = await attendanceRepository.findAttendanceByEmployeeAndDate(employeeId, start, end);
+
+  if (!existing || !existing.checkIn) {
+    const record = await checkIn(employeeId);
+    return { action: 'CHECK_IN', record };
+  }
+
+  if (!existing.checkOut) {
+    const record = await checkOut(employeeId);
+    return { action: 'CHECK_OUT', record };
+  }
+
+  throw new ApiError(StatusCodes.BAD_REQUEST, ATTENDANCE_MESSAGES.ALREADY_CHECKED_OUT);
+};
+
 const listAttendance = async (filters = {}, actor) => {
   if (!actor) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized');
 
@@ -119,6 +140,7 @@ const listAttendance = async (filters = {}, actor) => {
 module.exports = {
   checkIn,
   checkOut,
+  punch,
   listAttendance,
 };
 

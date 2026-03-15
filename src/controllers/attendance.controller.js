@@ -28,6 +28,20 @@ const checkOut = async (req, res, next) => {
   }
 };
 
+const punch = async (req, res, next) => {
+  try {
+    const employeeId = req.user.employeeId;
+    const result = await attendanceService.punch(employeeId);
+    const message = result.action === 'CHECK_IN'
+      ? ATTENDANCE_MESSAGES.CHECK_IN_SUCCESS
+      : ATTENDANCE_MESSAGES.CHECK_OUT_SUCCESS;
+    const statusCode = result.action === 'CHECK_IN' ? StatusCodes.CREATED : StatusCodes.OK;
+    return sendSuccess(res, message, result, statusCode);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const listAttendance = async (req, res, next) => {
   try {
     const filterDto = new AttendanceFilterDTO(req.query);
@@ -46,6 +60,7 @@ const listAttendance = async (req, res, next) => {
 module.exports = {
   checkIn,
   checkOut,
+  punch,
   listAttendance,
 };
 

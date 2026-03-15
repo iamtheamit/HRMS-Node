@@ -58,11 +58,28 @@ const deleteEmployee = async (req, res, next) => {
   }
 };
 
+const updateEmployeeLifecycle = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const action = req.body?.action;
+    const employee = await employeeService.changeEmployeeLifecycle(id, action, req.user);
+
+    const message = String(action || '').toUpperCase() === 'BLOCK'
+      ? EMPLOYEE_MESSAGES.BLOCK_SUCCESS
+      : EMPLOYEE_MESSAGES.LIFECYCLE_DELETE_SUCCESS;
+
+    return sendSuccess(res, message, employee, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   createEmployee,
   getEmployees,
   getEmployeeById,
   updateEmployee,
   deleteEmployee,
+  updateEmployeeLifecycle,
 };
 

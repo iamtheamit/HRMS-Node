@@ -13,14 +13,10 @@ const StatusCodes = require('../constants/statusCodes');
 const { AUTH_MESSAGES } = require('../constants/messages');
 const { ROLE_DEFAULT_PERMISSIONS } = require('../constants/permissions');
 const emailService = require('./email/email.service');
-const {
-  apiBaseUrl,
-  frontendUrl,
-  accessTokenExpiresInSeconds,
-  refreshTokenMaxAgeMs,
-} = require('../config/app');
 
 const SALT_ROUNDS = 10;
+const ACCESS_TOKEN_EXPIRES = '15m';
+const REFRESH_TOKEN_EXPIRES_DAYS = 7; // used for expiresAt
 
 const toSafeUser = (user) => {
   if (!user) return null;
@@ -40,7 +36,7 @@ const createAccessToken = (user, sessionId) => {
     role: user.role,
     sessionId,
   };
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: accessTokenExpiresInSeconds });
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES });
 };
 
 // helper to build an opaque refresh token string containing sessionId and raw token
@@ -79,10 +75,11 @@ const register = async ({ email, password, role = 'EMPLOYEE', firstName, lastNam
     isActive: false,
   });
 
-  const safeUser = toSafeUser(user);
+  const { password: _, ...safeUser } = user;
   // In production, send activation email with activationToken
   try {
-    const activationLink = `${apiBaseUrl.replace(/\/$/, '')}/api/auth/activate?token=${activationToken}`;
+    const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const activationLink = `${appUrl}/api/auth/activate?token=${activationToken}`;
     // fire-and-forget; errors are logged inside the service
     emailService.sendAccountActivationEmail(user, activationLink).catch((err) => console.error('Activation email failed:', err));
   } catch (err) {
@@ -103,7 +100,7 @@ const login = async ({ email, password, deviceInfo = '', ipAddress = '' }) => {
   // create session
   const rawRefresh = crypto.randomBytes(48).toString('hex');
   const hashedRefresh = await bcrypt.hash(rawRefresh, SALT_ROUNDS);
-  const expiresAt = new Date(Date.now() + refreshTokenMaxAgeMs);
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
 
   const createdSession = await sessionRepository.createSession({
     userId: user.id,
@@ -116,7 +113,7 @@ const login = async ({ email, password, deviceInfo = '', ipAddress = '' }) => {
   const refreshTokenString = buildRefreshTokenString(createdSession.id, rawRefresh);
   const accessToken = createAccessToken(user, createdSession.id);
 
-  const safeUser = toSafeUser(user);
+  const { password: _, ...safeUser } = user;
   return {
     accessToken,
     refreshToken: refreshTokenString,
@@ -148,7 +145,7 @@ const refresh = async (refreshTokenString) => {
   // rotate refresh token: issue a new raw token and update session
   const newRaw = crypto.randomBytes(48).toString('hex');
   const newHashed = await bcrypt.hash(newRaw, SALT_ROUNDS);
-  const newExpiresAt = new Date(Date.now() + refreshTokenMaxAgeMs);
+  const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
   await sessionRepository.updateRefreshToken(sessionId, newHashed, newExpiresAt);
 
   const newRefreshTokenString = buildRefreshTokenString(sessionId, newRaw);
@@ -181,20 +178,19 @@ const activateAccount = async (activationToken) => {
 
 const requestPasswordReset = async (email) => {
   const user = await authRepository.findUserByEmail(email);
-  if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, AUTH_MESSAGES.EMAIL_NOT_REGISTERED);
-  }
+  if (!user) return; // do not reveal existence
 
   const token = crypto.randomBytes(24).toString('hex');
   const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   await authRepository.updateUser(user.id, { resetToken: token, resetTokenExpiry: expiry });
-
-  const resetLink = `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
-  emailService.sendResetPasswordEmail(user, resetLink).catch((err) => {
-    console.error('Reset password email failed:', err);
-  });
-
+  // In production, send email with token
   return true;
+};
+
+const getUserById = async (userId) => {
+  const user = await authRepository.findUserById(userId);
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+  return toSafeUser(user);
 };
 
 const resetPassword = async (token, newPassword) => {
@@ -207,12 +203,6 @@ const resetPassword = async (token, newPassword) => {
   return true;
 };
 
-const getUserById = async (userId) => {
-  const user = await authRepository.findUserById(userId);
-  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
-  return toSafeUser(user);
-};
-
 // Permission helpers
 const userHasPermission = async (userId, permissionName) => {
   // SUPER_ADMIN always allowed
@@ -220,7 +210,7 @@ const userHasPermission = async (userId, permissionName) => {
   if (!user) return false;
   if (user.role === 'SUPER_ADMIN') return true;
 
-  // Role defaults are always active.
+  // Role defaults are always active even without explicit DB assignment.
   const roleDefaults = ROLE_DEFAULT_PERMISSIONS[user.role] || [];
   if (roleDefaults.includes(permissionName)) return true;
 

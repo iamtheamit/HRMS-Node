@@ -11,9 +11,14 @@ class CreateEmployeeDTO extends BaseDTO {
       'lastName',
       'email',
       'phone',
+      'countryCode',
+      'mobileNumber',
+      'profileUrl',
+      'documents',
       'departmentId',
       'managerId',
       'status',
+      'role',
     ]);
   }
 }
@@ -25,6 +30,10 @@ class UpdateEmployeeDTO extends BaseDTO {
       'lastName',
       'email',
       'phone',
+      'countryCode',
+      'mobileNumber',
+      'profileUrl',
+      'documents',
       'departmentId',
       'managerId',
       'status',

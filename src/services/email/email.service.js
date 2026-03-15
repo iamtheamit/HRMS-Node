@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
 const provider = require('./email.provider');
+const { frontendUrl } = require('../../config/app');
 
 const templatesDir = path.join(__dirname, '..', '..', 'templates', 'emails');
 const cache = new Map();
@@ -20,10 +21,20 @@ function render(template, vars = {}) {
   });
 }
 
-async function sendAccountActivationEmail(user, activationLink) {
+async function sendAccountActivationEmail(user, activationLink, temporaryPassword) {
   try {
     const tpl = await loadTemplate('accountActivation');
-    const html = render(tpl, { name: user.firstName || user.email, activationLink });
+    const temporaryPasswordSection = temporaryPassword
+      ? `<p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
+         <p>Please sign in with this password and update it after your first login.</p>`
+      : '';
+
+    const html = render(tpl, {
+      name: user.firstName || user.email,
+      activationLink,
+      loginLink: `${String(frontendUrl || '').replace(/\/$/, '')}/login`,
+      temporaryPasswordSection,
+    });
     await provider.sendEmail({ to: user.email, subject: 'Activate your HRMS account', html });
   } catch (err) {
     console.error('sendAccountActivationEmail error:', err);

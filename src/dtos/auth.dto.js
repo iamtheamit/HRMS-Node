@@ -16,8 +16,15 @@ class LoginDTO extends BaseDTO {
   }
 }
 
+class ChangePasswordDTO extends BaseDTO {
+  constructor(data) {
+    super(data, ['currentPassword', 'newPassword']);
+  }
+}
+
 module.exports = {
   RegisterDTO,
   LoginDTO,
+  ChangePasswordDTO,
 };
 

@@ -32,6 +32,18 @@ const errorMiddleware = (err, req, res, next) => {
     const target = err.meta && err.meta.target ? err.meta.target.join(', ') : null;
     statusCode = StatusCodes.CONFLICT;
     message = target ? `Duplicate value for field(s): ${target}` : 'Unique constraint failed.';
+  } else if (err.code === 'P2023') {
+    statusCode = StatusCodes.BAD_REQUEST;
+    message = 'Invalid identifier format in request.';
+  } else if (err.name === 'MulterError') {
+    statusCode = StatusCodes.BAD_REQUEST;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      message = 'Uploaded file is too large. Max size is 10 MB per file.';
+    } else if (err.code === 'LIMIT_FILE_COUNT') {
+      message = 'Too many files uploaded in one request.';
+    } else {
+      message = err.message || 'Invalid multipart upload payload.';
+    }
   } else {
     // For non-ApiError, hide internal messages in production
     message = isApiError

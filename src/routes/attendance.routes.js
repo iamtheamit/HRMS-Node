@@ -71,6 +71,19 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/attendance/punch:
+ *   post:
+ *     tags: [Attendance]
+ *     summary: Single punch endpoint (auto check-in or check-out)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Attendance updated successfully
+ */
+
+/**
+ * @swagger
  * /api/attendance:
  *   get:
  *     tags: [Attendance]
@@ -92,6 +105,11 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+router.post(
+	'/punch',
+	permissionMiddleware(PERMISSIONS.ATTENDANCE_CHECK_IN),
+	attendanceController.punch,
+);
 router.post(
 	'/check-in',
 	permissionMiddleware(PERMISSIONS.ATTENDANCE_CHECK_IN),

@@ -12,8 +12,12 @@ const swaggerUi = require('swagger-ui-express');
 
 const authRoutes = require('./routes/auth.routes');
 const employeeRoutes = require('./routes/employee.routes');
+const departmentRoutes = require('./routes/department.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
 const leaveRoutes = require('./routes/leave.routes');
+const hrAdminRoutes = require('./routes/hrAdmin.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const mediaRoutes = require('./routes/media.routes');
 const errorMiddleware = require('./middleware/error.middleware');
 const swaggerSpec = require('./config/swagger');
 const { corsOrigins } = require('./config/app');
@@ -83,8 +87,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Route registrations
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/departments', departmentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/hr-admin', hrAdminRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/media', mediaRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

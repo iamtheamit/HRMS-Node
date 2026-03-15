@@ -13,15 +13,14 @@ const {
   accessTokenCookieOptions,
   refreshTokenCookieOptions,
   clearCookieOptions,
-  frontendUrl,
 } = require('../config/app');
 
 const setAuthCookies = (res, tokens) => {
-  if (tokens.accessToken) {
+  if (tokens?.accessToken) {
     res.cookie(accessTokenCookieName, tokens.accessToken, accessTokenCookieOptions);
   }
 
-  if (tokens.refreshToken) {
+  if (tokens?.refreshToken) {
     res.cookie(refreshTokenCookieName, tokens.refreshToken, refreshTokenCookieOptions);
   }
 };
@@ -32,11 +31,8 @@ const clearAuthCookies = (res) => {
 };
 
 const getRefreshTokenFromRequest = (req) => {
-  if (req.body && req.body.refreshToken) {
-    return req.body.refreshToken;
-  }
-
-  return req.cookies && req.cookies[refreshTokenCookieName];
+  if (req.body?.refreshToken) return req.body.refreshToken;
+  return req.cookies?.[refreshTokenCookieName] || null;
 };
 
 const register = async (req, res, next) => {
@@ -95,6 +91,15 @@ const logoutAll = async (req, res, next) => {
   }
 };
 
+const getMe = async (req, res, next) => {
+  try {
+    const user = await authService.getUserById(req.user.userId);
+    return sendSuccess(res, 'User profile fetched', user, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const activateAccount = async (req, res, next) => {
   try {
     // Accept token from POST body or GET query (for emailed links)
@@ -103,8 +108,9 @@ const activateAccount = async (req, res, next) => {
 
     // If this was triggered by a browser GET (e.g. user clicked emailed link), redirect to frontend
     if (req.method && req.method.toUpperCase() === 'GET') {
+      const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
       // Redirect to frontend login page with a flag indicating activation succeeded
-      return res.redirect(`${frontendUrl.replace(/\/$/, '')}/login?activated=1`);
+      return res.redirect(`${appUrl.replace(/\/$/, '')}/login?activated=1`);
     }
 
     return sendSuccess(res, AUTH_MESSAGES.ACTIVATION_SUCCESS, null, StatusCodes.OK);
@@ -128,15 +134,6 @@ const resetPassword = async (req, res, next) => {
     const { token, newPassword } = req.body;
     await authService.resetPassword(token, newPassword);
     return sendSuccess(res, AUTH_MESSAGES.RESET_SUCCESS, null, StatusCodes.OK);
-  } catch (err) {
-    return next(err);
-  }
-};
-
-const getMe = async (req, res, next) => {
-  try {
-    const user = await authService.getUserById(req.user.userId);
-    return sendSuccess(res, 'User profile fetched', user, StatusCodes.OK);
   } catch (err) {
     return next(err);
   }

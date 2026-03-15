@@ -42,6 +42,18 @@ const router = express.Router();
  *         phone:
  *           type: string
  *           nullable: true
+ *         countryCode:
+ *           type: string
+ *           nullable: true
+ *         mobileNumber:
+ *           type: string
+ *           nullable: true
+ *         profileUrl:
+ *           type: string
+ *           nullable: true
+ *         documents:
+ *           type: object
+ *           nullable: true
  *         status:
  *           type: string
  *         hireDate:
@@ -73,6 +85,14 @@ const router = express.Router();
  *           type: string
  *         phone:
  *           type: string
+ *         countryCode:
+ *           type: string
+ *         mobileNumber:
+ *           type: string
+ *         profileUrl:
+ *           type: string
+ *         documents:
+ *           type: object
  *         hireDate:
  *           type: string
  *           format: date-time
@@ -88,6 +108,9 @@ const router = express.Router();
  *         userId:
  *           type: string
  *           format: uuid
+ *         role:
+ *           type: string
+ *           enum: [SUPER_ADMIN, HR_ADMIN, MANAGER, EMPLOYEE]
  */
 
 /**
@@ -188,12 +211,44 @@ const router = express.Router();
  *         description: Employee deleted
  */
 
+/**
+ * @swagger
+ * /api/employees/{id}/lifecycle:
+ *   patch:
+ *     tags: [Employees]
+ *     summary: Block or soft-delete an employee
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [action]
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [BLOCK, DELETE]
+ *     responses:
+ *       200:
+ *         description: Employee lifecycle updated
+ */
+
 router.use(authMiddleware);
 
 router.get('/', permissionMiddleware(PERMISSIONS.EMPLOYEE_LIST), employeeController.getEmployees);
 router.get('/:id', permissionMiddleware(PERMISSIONS.EMPLOYEE_VIEW), employeeController.getEmployeeById);
 router.post('/', permissionMiddleware(PERMISSIONS.EMPLOYEE_CREATE), employeeController.createEmployee);
 router.put('/:id', permissionMiddleware(PERMISSIONS.EMPLOYEE_UPDATE), employeeController.updateEmployee);
+router.patch('/:id/lifecycle', permissionMiddleware(PERMISSIONS.EMPLOYEE_DELETE), employeeController.updateEmployeeLifecycle);
 router.delete('/:id', permissionMiddleware(PERMISSIONS.EMPLOYEE_DELETE), employeeController.deleteEmployee);
 
 module.exports = router;
