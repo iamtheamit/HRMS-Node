@@ -4,6 +4,7 @@
 
 require('dotenv').config();
 
+const cookieParser = require('cookie-parser');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -15,11 +16,24 @@ const attendanceRoutes = require('./routes/attendance.routes');
 const leaveRoutes = require('./routes/leave.routes');
 const errorMiddleware = require('./middleware/error.middleware');
 const swaggerSpec = require('./config/swagger');
+const { corsOrigins } = require('./config/app');
 
 const app = express();
 
+const corsOptions = {
+  credentials: true,
+  origin(origin, callback) {
+    if (!origin || corsOrigins.length === 0 || corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
+};
+
 // Core middleware
-app.use(cors());
+app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));

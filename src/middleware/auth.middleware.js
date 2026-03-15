@@ -7,10 +7,13 @@ const ApiError = require('../utils/apiError');
 const StatusCodes = require('../constants/statusCodes');
 const { AUTH_MESSAGES } = require('../constants/messages');
 const authRepository = require('../repositories/auth.repository');
+const { accessTokenCookieName } = require('../config/app');
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const cookieToken = req.cookies && req.cookies[accessTokenCookieName];
+  const token = bearerToken || cookieToken;
 
   if (!token) {
     return next(new ApiError(StatusCodes.UNAUTHORIZED, AUTH_MESSAGES.TOKEN_MISSING));

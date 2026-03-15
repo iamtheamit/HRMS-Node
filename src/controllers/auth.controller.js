@@ -7,6 +7,37 @@ const { sendSuccess } = require('../utils/apiResponse');
 const StatusCodes = require('../constants/statusCodes');
 const { AUTH_MESSAGES } = require('../constants/messages');
 const { RegisterDTO, LoginDTO } = require('../dtos/auth.dto');
+const {
+  accessTokenCookieName,
+  refreshTokenCookieName,
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+  clearCookieOptions,
+  frontendUrl,
+} = require('../config/app');
+
+const setAuthCookies = (res, tokens) => {
+  if (tokens.accessToken) {
+    res.cookie(accessTokenCookieName, tokens.accessToken, accessTokenCookieOptions);
+  }
+
+  if (tokens.refreshToken) {
+    res.cookie(refreshTokenCookieName, tokens.refreshToken, refreshTokenCookieOptions);
+  }
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie(accessTokenCookieName, clearCookieOptions);
+  res.clearCookie(refreshTokenCookieName, clearCookieOptions);
+};
+
+const getRefreshTokenFromRequest = (req) => {
+  if (req.body && req.body.refreshToken) {
+    return req.body.refreshToken;
+  }
+
+  return req.cookies && req.cookies[refreshTokenCookieName];
+};
 
 const register = async (req, res, next) => {
   try {
@@ -24,6 +55,7 @@ const login = async (req, res, next) => {
     const deviceInfo = req.headers['user-agent'] || '';
     const ipAddress = req.ip || req.connection.remoteAddress || '';
     const result = await authService.login({ ...dto, deviceInfo, ipAddress });
+    setAuthCookies(res, result);
     return sendSuccess(res, AUTH_MESSAGES.LOGIN_SUCCESS, result, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -32,8 +64,9 @@ const login = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = getRefreshTokenFromRequest(req);
     const tokens = await authService.refresh(refreshToken);
+    setAuthCookies(res, tokens);
     return sendSuccess(res, AUTH_MESSAGES.REFRESH_SUCCESS, tokens, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -42,8 +75,9 @@ const refresh = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = getRefreshTokenFromRequest(req);
     await authService.logout(refreshToken);
+    clearAuthCookies(res);
     return sendSuccess(res, AUTH_MESSAGES.LOGOUT_SUCCESS, null, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -54,6 +88,7 @@ const logoutAll = async (req, res, next) => {
   try {
     const userId = req.user && req.user.userId;
     await authService.logoutAll(userId);
+    clearAuthCookies(res);
     return sendSuccess(res, AUTH_MESSAGES.LOGOUT_ALL_SUCCESS, null, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -62,8 +97,16 @@ const logoutAll = async (req, res, next) => {
 
 const activateAccount = async (req, res, next) => {
   try {
-    const { token } = req.body;
+    // Accept token from POST body or GET query (for emailed links)
+    const token = (req.body && req.body.token) || (req.query && req.query.token) || (req.params && req.params.token);
     await authService.activateAccount(token);
+
+    // If this was triggered by a browser GET (e.g. user clicked emailed link), redirect to frontend
+    if (req.method && req.method.toUpperCase() === 'GET') {
+      // Redirect to frontend login page with a flag indicating activation succeeded
+      return res.redirect(`${frontendUrl.replace(/\/$/, '')}/login?activated=1`);
+    }
+
     return sendSuccess(res, AUTH_MESSAGES.ACTIVATION_SUCCESS, null, StatusCodes.OK);
   } catch (err) {
     return next(err);
@@ -90,6 +133,15 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+const getMe = async (req, res, next) => {
+  try {
+    const user = await authService.getUserById(req.user.userId);
+    return sendSuccess(res, 'User profile fetched', user, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -99,5 +151,6 @@ module.exports = {
   activateAccount,
   resetPasswordRequest,
   resetPassword,
+  getMe,
 };
 

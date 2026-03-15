@@ -269,5 +269,26 @@ router.post('/reset-password-request', authController.resetPasswordRequest);
  */
 router.post('/reset-password', authController.resetPassword);
 
+// Support activation via emailed link (GET /api/auth/activate?token=...)
+router.get('/activate', authController.activateAccount);
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     summary: Get the currently authenticated user's profile
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
+router.get('/me', authMiddleware, authController.getMe);
+
 module.exports = router;
 

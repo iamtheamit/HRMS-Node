@@ -9,6 +9,7 @@ const AUTH_MESSAGES = {
   REGISTER_SUCCESS: 'User registered successfully',
   INVALID_CREDENTIALS: 'Invalid email or password',
   EMAIL_ALREADY_REGISTERED: 'Email is already registered',
+  EMAIL_NOT_REGISTERED: 'We could not find an account with this email address',
   REFRESH_SUCCESS: 'Token refreshed successfully',
   LOGOUT_SUCCESS: 'Logged out successfully',
   LOGOUT_ALL_SUCCESS: 'Logged out from all devices successfully',
