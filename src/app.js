@@ -17,6 +17,7 @@ const hrAdminRoutes = require('./routes/hrAdmin.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const mediaRoutes = require('./routes/media.routes');
 const errorMiddleware = require('./middleware/error.middleware');
+const apiKeyMiddleware = require('./middleware/apiKey.middleware');
 const { createSwaggerSpec } = require('./config/swagger');
 const { ensureDefaultAdmin } = require('./bootstrap/defaultAdmin');
 const { apiBaseUrl, corsOrigins } = require('./config/app');
@@ -182,6 +183,8 @@ app.get(['/api-docs', '/api-docs/'], (req, res) => {
   </body>
 </html>`);
 });
+
+app.use('/api', apiKeyMiddleware);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);

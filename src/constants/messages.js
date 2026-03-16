@@ -65,6 +65,12 @@ const MEDIA_MESSAGES = {
   UPLOAD_SUCCESS: 'Media uploaded successfully',
 };
 
+const SECURITY_MESSAGES = {
+  API_KEY_MISSING: 'API key is missing',
+  API_KEY_INVALID: 'Invalid API key',
+  API_KEY_NOT_CONFIGURED: 'API key is not configured on the server',
+};
+
 const COMMON_MESSAGES = {
   HEALTH_OK: 'HRMS API is running',
   ROUTE_NOT_FOUND: 'Route not found',
@@ -78,6 +84,7 @@ module.exports = {
   ATTENDANCE_MESSAGES,
   LEAVE_MESSAGES,
   MEDIA_MESSAGES,
+  SECURITY_MESSAGES,
   COMMON_MESSAGES,
 };
 

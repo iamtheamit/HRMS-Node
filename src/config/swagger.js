@@ -24,6 +24,11 @@ const createSwaggerSpec = (serverUrl) => swaggerJSDoc({
       : {}),
     components: {
       securitySchemes: {
+        apiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key',
+        },
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
@@ -33,6 +38,7 @@ const createSwaggerSpec = (serverUrl) => swaggerJSDoc({
     },
     security: [
       {
+        apiKeyAuth: [],
         bearerAuth: [],
       },
     ],
