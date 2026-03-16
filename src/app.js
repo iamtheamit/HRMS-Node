@@ -18,9 +18,14 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const mediaRoutes = require('./routes/media.routes');
 const errorMiddleware = require('./middleware/error.middleware');
 const swaggerSpec = require('./config/swagger');
+const { ensureDefaultAdmin } = require('./bootstrap/defaultAdmin');
 const { corsOrigins } = require('./config/app');
 
 const app = express();
+
+ensureDefaultAdmin().catch((error) => {
+  console.error('Default admin bootstrap failed:', error);
+});
 
 const normalizeOrigin = (value) => {
   if (!value) return '';
