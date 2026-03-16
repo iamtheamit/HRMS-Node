@@ -4,7 +4,7 @@
 
 const swaggerJSDoc = require('swagger-jsdoc');
 
-const swaggerOptions = {
+const createSwaggerSpec = (serverUrl) => swaggerJSDoc({
   definition: {
     openapi: '3.0.0',
     info: {
@@ -12,12 +12,16 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'API documentation for the HRMS backend built with Node.js, Express, PostgreSQL, and Prisma.',
     },
-    servers: [
-      {
-        url: 'http://localhost:5000',
-        description: 'Local development server',
-      },
-    ],
+    ...(serverUrl
+      ? {
+          servers: [
+            {
+              url: serverUrl,
+              description: 'Current API server',
+            },
+          ],
+        }
+      : {}),
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -34,9 +38,9 @@ const swaggerOptions = {
     ],
   },
   apis: ['./src/routes/*.js'],
+});
+
+module.exports = {
+  createSwaggerSpec,
 };
-
-const swaggerSpec = swaggerJSDoc(swaggerOptions);
-
-module.exports = swaggerSpec;
 

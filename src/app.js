@@ -17,9 +17,9 @@ const hrAdminRoutes = require('./routes/hrAdmin.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const mediaRoutes = require('./routes/media.routes');
 const errorMiddleware = require('./middleware/error.middleware');
-const swaggerSpec = require('./config/swagger');
+const { createSwaggerSpec } = require('./config/swagger');
 const { ensureDefaultAdmin } = require('./bootstrap/defaultAdmin');
-const { corsOrigins } = require('./config/app');
+const { apiBaseUrl, corsOrigins } = require('./config/app');
 
 const app = express();
 
@@ -39,6 +39,24 @@ const normalizeOrigin = (value) => {
 };
 
 const allowedOrigins = new Set(corsOrigins.map(normalizeOrigin).filter(Boolean));
+
+const resolveSwaggerServerUrl = (req) => {
+  const configuredBaseUrl = String(apiBaseUrl || '').trim();
+  if (configuredBaseUrl) {
+    try {
+      return new URL(configuredBaseUrl).origin;
+    } catch (error) {
+      return configuredBaseUrl.replace(/\/$/, '');
+    }
+  }
+
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get('host');
+
+  return protocol && host ? `${protocol}://${host}` : '';
+};
 
 const isLocalLoopbackOrigin = (origin) => {
   try {
@@ -84,7 +102,7 @@ app.get('/health', (req, res) => {
 
 app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  res.status(200).send(swaggerSpec);
+  res.status(200).send(createSwaggerSpec(resolveSwaggerServerUrl(req)));
 });
 
 app.get(['/api-docs', '/api-docs/'], (req, res) => {
