@@ -39,12 +39,23 @@ const normalizeOrigin = (value) => {
   }
 };
 
+const parseBoolean = (value, fallback = false) => {
+  if (value === undefined) return fallback;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+
+  return fallback;
+};
+
 const originPatterns = corsOrigins
   .map((value) => String(value || '').trim().toLowerCase().replace(/\/$/, ''))
   .filter(Boolean);
 
 const exactAllowedOrigins = new Set(originPatterns.filter((pattern) => !pattern.includes('*')).map(normalizeOrigin));
 const wildcardOriginPatterns = originPatterns.filter((pattern) => pattern.includes('*'));
+const allowVercelPreviewOrigins = parseBoolean(process.env.CORS_ALLOW_VERCEL_PREVIEWS, false);
 
 const matchesWildcardOrigin = (normalizedOrigin, pattern) => {
   if (pattern === '*') return true;
@@ -83,6 +94,15 @@ const isAllowedOrigin = (normalizedOrigin) => {
   }
 
   return wildcardOriginPatterns.some((pattern) => matchesWildcardOrigin(normalizedOrigin, pattern));
+};
+
+const isVercelPreviewOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return parsed.hostname.toLowerCase().endsWith('.vercel.app');
+  } catch (error) {
+    return false;
+  }
 };
 
 const resolveSwaggerServerUrl = (req) => {
@@ -132,7 +152,11 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    return callback(new Error('Not allowed by CORS'));
+    if (allowVercelPreviewOrigins && isVercelPreviewOrigin(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
 };
 
