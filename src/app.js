@@ -38,9 +38,62 @@ const normalizeOrigin = (value) => {
   }
 };
 
-const allowedOrigins = new Set(corsOrigins.map(normalizeOrigin).filter(Boolean));
+const originPatterns = corsOrigins
+  .map((value) => String(value || '').trim().toLowerCase().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const exactAllowedOrigins = new Set(originPatterns.filter((pattern) => !pattern.includes('*')).map(normalizeOrigin));
+const wildcardOriginPatterns = originPatterns.filter((pattern) => pattern.includes('*'));
+
+const matchesWildcardOrigin = (normalizedOrigin, pattern) => {
+  if (pattern === '*') return true;
+
+  try {
+    const parsedOrigin = new URL(normalizedOrigin);
+
+    if (pattern.startsWith('http://*.') || pattern.startsWith('https://*.')) {
+      const wildcardUrl = new URL(pattern.replace('*.', 'placeholder.'));
+      const patternSuffix = wildcardUrl.hostname.replace(/^placeholder\./, '');
+      return (
+        parsedOrigin.protocol === wildcardUrl.protocol &&
+        parsedOrigin.hostname.toLowerCase().endsWith(`.${patternSuffix}`)
+      );
+    }
+
+    if (pattern.startsWith('*.')) {
+      const patternSuffix = pattern.slice(2);
+      return parsedOrigin.hostname.toLowerCase().endsWith(`.${patternSuffix}`);
+    }
+
+    if (pattern.includes('*')) {
+      const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
+      return regex.test(normalizedOrigin);
+    }
+  } catch (error) {
+    return false;
+  }
+
+  return false;
+};
+
+const isAllowedOrigin = (normalizedOrigin) => {
+  if (exactAllowedOrigins.has(normalizedOrigin)) {
+    return true;
+  }
+
+  return wildcardOriginPatterns.some((pattern) => matchesWildcardOrigin(normalizedOrigin, pattern));
+};
 
 const resolveSwaggerServerUrl = (req) => {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get('host');
+
+  if (protocol && host) {
+    return `${protocol}://${host}`;
+  }
+
   const configuredBaseUrl = String(apiBaseUrl || '').trim();
   if (configuredBaseUrl) {
     try {
@@ -50,12 +103,7 @@ const resolveSwaggerServerUrl = (req) => {
     }
   }
 
-  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
-  const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
-  const protocol = forwardedProto || req.protocol;
-  const host = forwardedHost || req.get('host');
-
-  return protocol && host ? `${protocol}://${host}` : '';
+  return '';
 };
 
 const isLocalLoopbackOrigin = (origin) => {
@@ -70,12 +118,12 @@ const isLocalLoopbackOrigin = (origin) => {
 const corsOptions = {
   credentials: true,
   origin(origin, callback) {
-    if (!origin || allowedOrigins.size === 0) {
+    if (!origin || originPatterns.length === 0) {
       return callback(null, true);
     }
 
     const normalizedOrigin = normalizeOrigin(origin);
-    if (allowedOrigins.has(normalizedOrigin)) {
+    if (isAllowedOrigin(normalizedOrigin)) {
       return callback(null, true);
     }
 
