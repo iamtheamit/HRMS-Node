@@ -6,15 +6,44 @@ const ApiError = require('../utils/apiError');
 const { sendError } = require('../utils/apiResponse');
 const StatusCodes = require('../constants/statusCodes');
 const { COMMON_MESSAGES } = require('../constants/messages');
+const logger = require('../utils/logger');
 
 // eslint-disable-next-line no-unused-vars
 const errorMiddleware = (err, req, res, next) => {
   const isApiError = err instanceof ApiError;
 
-  // Always log the full error server-side for diagnostics (stack included)
-  // Use a logging service here in production (winston/pino/etc.).
-  // eslint-disable-next-line no-console
-  console.error(err);
+  // Extract request context for detailed logging
+  const errorContext = {
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    errorType: err.name || 'UnknownError',
+    statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
+  };
+
+  // Log the full error with context for server-side diagnostics
+  if (err.code === 'P2023') {
+    logger.error(`[DB] Invalid identifier format in request`, err);
+    errorContext.message = 'Prisma validation error (P2023)';
+  } else if (err.code === 'P2002') {
+    logger.error(`[DB] Unique constraint violation`, err);
+    errorContext.message = 'Duplicate value error (P2002)';
+  } else if (err.name === 'PrismaClientValidationError') {
+    logger.error(`[DB] Prisma validation error`, err);
+    errorContext.message = 'Invalid field value';
+  } else if (err.name === 'MulterError') {
+    logger.error(`[UPLOAD] File upload error: ${err.code}`, err);
+    errorContext.message = `File upload error (${err.code})`;
+  } else if (isApiError) {
+    // Expected API errors (validation, auth, etc) - log at WARN level
+    logger.warn(`[API] ${err.message}`, { ...errorContext, details: err.error });
+  } else {
+    // Unexpected errors - log at ERROR level with full stack
+    logger.error(`[ERROR] Unhandled error: ${err.message}`, err);
+  }
+
+  // Store error context in response locals for potential downstream use
+  res.locals.errorContext = errorContext;
 
   // Map known Prisma/client errors to friendly HTTP responses
   let statusCode = (isApiError && err.statusCode) || err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
@@ -57,6 +86,7 @@ const errorMiddleware = (err, req, res, next) => {
   // Never expose stack traces or Prisma internals to clients.
   const errorPayload = isApiError && err.error ? err.error : undefined;
 
+  logger.debug(`Error response`, { statusCode, message, hasPayload: !!errorPayload });
   return sendError(res, message, statusCode, errorPayload);
 };
 

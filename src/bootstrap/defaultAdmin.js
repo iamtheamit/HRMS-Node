@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const logger = require('../utils/logger');
 const authRepository = require('../repositories/auth.repository');
 
 const DEFAULT_ADMIN_EMAIL = 'admin@mailinator.com';
@@ -33,6 +34,7 @@ const isPoolTimeoutError = (error) => String(error?.message || '').includes('Tim
 
 async function ensureDefaultAdmin() {
   if (!shouldBootstrapDefaultAdmin()) {
+    logger.debug('[BOOTSTRAP] Default admin bootstrap disabled (set ENABLE_DEFAULT_ADMIN_BOOTSTRAP=true to enable in production)');
     return null;
   }
 
@@ -40,41 +42,59 @@ async function ensureDefaultAdmin() {
     return ensureDefaultAdminPromise;
   }
 
+  logger.info('[BOOTSTRAP] Starting default admin bootstrap process...');
+
   ensureDefaultAdminPromise = (async () => {
-    const existingAdmin = await authRepository.findUserByEmail(DEFAULT_ADMIN_EMAIL);
-    if (existingAdmin) {
-      return existingAdmin;
+    try {
+      logger.debug('[BOOTSTRAP] Checking if default admin already exists', { email: DEFAULT_ADMIN_EMAIL });
+      const existingAdmin = await authRepository.findUserByEmail(DEFAULT_ADMIN_EMAIL);
+      
+      if (existingAdmin) {
+        logger.info('[BOOTSTRAP] Default admin already exists, skipping creation', {
+          email: DEFAULT_ADMIN_EMAIL,
+          userId: existingAdmin.id,
+        });
+        return existingAdmin;
+      }
+
+      logger.info('[BOOTSTRAP] Default admin not found, creating new admin...');
+      const hashedPassword = await bcrypt.hash(DEFAULT_ADMIN_PASSWORD, SALT_ROUNDS);
+
+      const createdAdmin = await authRepository.createUser({
+        email: DEFAULT_ADMIN_EMAIL,
+        password: hashedPassword,
+        role: 'SUPER_ADMIN',
+        firstName: 'System',
+        lastName: 'Admin',
+        isActive: true,
+        activationToken: null,
+      });
+
+      logger.info('[BOOTSTRAP] Default admin created successfully', {
+        email: DEFAULT_ADMIN_EMAIL,
+        userId: createdAdmin.id,
+      });
+
+      return createdAdmin;
+    } catch (error) {
+      ensureDefaultAdminPromise = undefined;
+
+      // Handle Prisma connection pool timeout gracefully in production
+      // Vercel serverless functions have limited DB connections (default: 5)
+      // During cold starts, the pool can be exhausted. Skip bootstrap rather than fail startup.
+      if (process.env.NODE_ENV === 'production' && isPoolTimeoutError(error)) {
+        logger.warn('[BOOTSTRAP] Skipping default admin bootstrap due to Prisma connection pool timeout (connection exhausted)', {
+          errorMessage: error.message,
+          recommendation: 'Verify Prisma connection pool settings or CORS configuration during cold starts',
+        });
+        return null;
+      }
+
+      // For other errors, fail startup loudly to alert developers
+      logger.error('[BOOTSTRAP] Default admin bootstrap failed with unexpected error', error);
+      throw error;
     }
-
-    const hashedPassword = await bcrypt.hash(DEFAULT_ADMIN_PASSWORD, SALT_ROUNDS);
-
-    const createdAdmin = await authRepository.createUser({
-      email: DEFAULT_ADMIN_EMAIL,
-      password: hashedPassword,
-      role: 'SUPER_ADMIN',
-      firstName: 'System',
-      lastName: 'Admin',
-      isActive: true,
-      activationToken: null,
-    });
-
-    console.log(`Default admin created: ${DEFAULT_ADMIN_EMAIL}`);
-
-    return createdAdmin;
-  })().catch((error) => {
-    ensureDefaultAdminPromise = undefined;
-
-    // Handle Prisma connection pool timeout gracefully in production
-    // Vercel serverless functions have limited DB connections (default: 5)
-    // During cold starts, the pool can be exhausted. Skip bootstrap rather than fail startup.
-    if (process.env.NODE_ENV === 'production' && isPoolTimeoutError(error)) {
-      console.warn('Skipping default admin bootstrap due to Prisma connection pool timeout.');
-      return null;
-    }
-
-    // For other errors, fail startup loudly to alert developers
-    throw error;
-  });
+  })();
 
   return ensureDefaultAdminPromise;
 }

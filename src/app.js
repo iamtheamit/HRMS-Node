@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const logger = require('./utils/logger');
 
 const authRoutes = require('./routes/auth.routes');
 const employeeRoutes = require('./routes/employee.routes');
@@ -24,8 +25,12 @@ const { apiBaseUrl, corsOrigins } = require('./config/app');
 
 const app = express();
 
+// Bootstrap default admin account on application startup
+logger.info('Starting HRMS backend application...');
+logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
 ensureDefaultAdmin().catch((error) => {
-  console.error('Default admin bootstrap failed:', error);
+  logger.error('Default admin bootstrap failed', error);
 });
 
 const normalizeOrigin = (value) => {
@@ -160,11 +165,40 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    return callback(new Error(`Not allowed by CORS: ${origin}`));
-  },
-};
+// Configure CORS with detailed logging
+logger.info('Configuring CORS with allowed origins', {
+  exactOrigins: Array.from(exactAllowedOrigins),
+  wildcardPatterns: wildcardOriginPatterns,
+  allowVercelPreviews: allowVercelPreviewOrigins,
+});
 
 app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configure morgan with custom token for better debugging
+morgan.token('req-headers', (req) => JSON.stringify({
+  'x-api-key': req.headers['x-api-key'] ? '*hidden*' : 'missing',
+  'user-agent': req.headers['user-agent'],
+  'origin': req.headers['origin'],
+}));
+
+morgan.token('error-msg', (req, res) => {
+  const error = res.locals.errorMessage;
+  return error ? `| Error: ${error}` : '';
+});
+
+// Use detailed morgan format for request logging
+const morganFormat = ':remote-addr - [:date[clf]] ":method :url HTTP/:http-version" :status :response-time ms ":req-headers" :error-msg';
+app.use(morgan(morganFormat, {
+  stream: {
+    write: (message) => {
+      // Only log at INFO level, morgan handles the formatting
+      logger.info(message.trim());
+    },
+  },
+}ions));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
