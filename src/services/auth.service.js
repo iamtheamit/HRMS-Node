@@ -13,6 +13,8 @@ const StatusCodes = require('../constants/statusCodes');
 const { AUTH_MESSAGES } = require('../constants/messages');
 const { ROLE_DEFAULT_PERMISSIONS } = require('../constants/permissions');
 const emailService = require('./email/email.service');
+const logger = require('../utils/logger');
+const { frontendUrl } = require('../config/app');
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRES = '15m';
@@ -76,14 +78,18 @@ const register = async ({ email, password, role = 'EMPLOYEE', firstName, lastNam
   });
 
   const { password: _, ...safeUser } = user;
-  // In production, send activation email with activationToken
+  // Send activation email and await delivery attempt (important on serverless runtimes).
   try {
-    const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const appUrl = String(frontendUrl || process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
     const activationLink = `${appUrl}/api/auth/activate?token=${activationToken}`;
-    // fire-and-forget; errors are logged inside the service
-    emailService.sendAccountActivationEmail(user, activationLink).catch((err) => console.error('Activation email failed:', err));
+    await emailService.sendAccountActivationEmail(user, activationLink);
+    logger.info('[AUTH] Registration activation email sent', {
+      userId: user.id,
+      email: user.email,
+    });
   } catch (err) {
-    console.error('prepare activation email failed:', err);
+    // Do not fail registration because of mail provider issues.
+    logger.error('[AUTH] Registration activation email failed', err);
   }
   return safeUser;
 };
@@ -178,12 +184,33 @@ const activateAccount = async (activationToken) => {
 
 const requestPasswordReset = async (email) => {
   const user = await authRepository.findUserByEmail(email);
-  if (!user) return; // do not reveal existence
+  if (!user) {
+    logger.info('[AUTH] Password reset requested for non-existing user (ignored to prevent email enumeration)', {
+      email,
+    });
+    return;
+  }
 
   const token = crypto.randomBytes(24).toString('hex');
   const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   await authRepository.updateUser(user.id, { resetToken: token, resetTokenExpiry: expiry });
-  // In production, send email with token
+
+  const baseFrontendUrl = String(frontendUrl || process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const resetLink = `${baseFrontendUrl}/reset-password?token=${token}`;
+
+  logger.info('[AUTH] Sending password reset email', {
+    userId: user.id,
+    email: user.email,
+    expiresAt: expiry.toISOString(),
+  });
+
+  await emailService.sendResetPasswordEmail(user, resetLink);
+
+  logger.info('[AUTH] Password reset email dispatched', {
+    userId: user.id,
+    email: user.email,
+  });
+
   return true;
 };
 

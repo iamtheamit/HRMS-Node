@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const provider = require('./email.provider');
 const { frontendUrl } = require('../../config/app');
+const logger = require('../../utils/logger');
 
 const templatesDir = path.join(__dirname, '..', '..', 'templates', 'emails');
 const cache = new Map();
@@ -37,7 +38,8 @@ async function sendAccountActivationEmail(user, activationLink, temporaryPasswor
     });
     await provider.sendEmail({ to: user.email, subject: 'Activate your HRMS account', html });
   } catch (err) {
-    console.error('sendAccountActivationEmail error:', err);
+    logger.error('[EMAIL] sendAccountActivationEmail failed', err);
+    throw err;
   }
 }
 
@@ -47,7 +49,8 @@ async function sendResetPasswordEmail(user, resetLink) {
     const html = render(tpl, { name: user.firstName || user.email, resetLink });
     await provider.sendEmail({ to: user.email, subject: 'Reset your HRMS password', html });
   } catch (err) {
-    console.error('sendResetPasswordEmail error:', err);
+    logger.error('[EMAIL] sendResetPasswordEmail failed', err);
+    throw err;
   }
 }
 
@@ -57,7 +60,8 @@ async function sendWelcomeEmail(user) {
     const html = render(tpl, { name: user.firstName || user.email });
     await provider.sendEmail({ to: user.email, subject: 'Welcome to HRMS', html });
   } catch (err) {
-    console.error('sendWelcomeEmail error:', err);
+    logger.error('[EMAIL] sendWelcomeEmail failed', err);
+    throw err;
   }
 }
 

@@ -40,6 +40,14 @@ async function initTransporter() {
         : undefined,
     });
 
+    try {
+      await transporter.verify();
+      logger.info('[EMAIL] SMTP transporter verified successfully');
+    } catch (verifyError) {
+      logger.error('[EMAIL] SMTP transporter verification failed', verifyError);
+      throw verifyError;
+    }
+
     logger.info('[EMAIL] SMTP transporter initialized successfully');
     return transporter;
   }

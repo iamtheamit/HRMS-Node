@@ -11,6 +11,7 @@ const StatusCodes = require('../constants/statusCodes');
 const { EMPLOYEE_MESSAGES, AUTH_MESSAGES } = require('../constants/messages');
 const emailService = require('./email/email.service');
 const { apiBaseUrl } = require('../config/app');
+const logger = require('../utils/logger');
 
 const SALT_ROUNDS = 10;
 const USER_ROLES = ['SUPER_ADMIN', 'HR_ADMIN', 'MANAGER', 'EMPLOYEE'];
@@ -110,9 +111,17 @@ const createEmployee = async (payload) => {
   });
 
   const activationLink = `${apiBaseUrl.replace(/\/$/, '')}/api/auth/activate?token=${activationToken}`;
-  emailService.sendAccountActivationEmail(employee.user, activationLink, temporaryPassword).catch((err) => {
-    console.error('Employee activation email failed:', err);
-  });
+  try {
+    await emailService.sendAccountActivationEmail(employee.user, activationLink, temporaryPassword);
+    logger.info('[EMPLOYEE] Activation email sent for newly created employee', {
+      employeeId: employee.id,
+      userId: employee.user?.id,
+      email: employee.user?.email,
+    });
+  } catch (err) {
+    // Keep employee creation successful even if email provider fails.
+    logger.error('[EMPLOYEE] Failed to send activation email for newly created employee', err);
+  }
 
   return employee;
 };
