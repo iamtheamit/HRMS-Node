@@ -17,11 +17,15 @@ const parseBoolean = (value, fallback = false) => {
   return fallback;
 };
 
+// Determines whether to bootstrap default admin account on startup
+// In production, disabled by default to avoid Prisma connection pool exhaustion
+// Can be explicitly enabled via ENABLE_DEFAULT_ADMIN_BOOTSTRAP env variable
 const shouldBootstrapDefaultAdmin = () => {
   if (process.env.ENABLE_DEFAULT_ADMIN_BOOTSTRAP !== undefined) {
     return parseBoolean(process.env.ENABLE_DEFAULT_ADMIN_BOOTSTRAP, false);
   }
 
+  // Only auto-bootstrap in development environments
   return process.env.NODE_ENV !== 'production';
 };
 
@@ -60,13 +64,15 @@ async function ensureDefaultAdmin() {
   })().catch((error) => {
     ensureDefaultAdminPromise = undefined;
 
-    // In serverless production, DB pool can be saturated during cold starts.
-    // Skip bootstrap instead of failing startup for this transient condition.
+    // Handle Prisma connection pool timeout gracefully in production
+    // Vercel serverless functions have limited DB connections (default: 5)
+    // During cold starts, the pool can be exhausted. Skip bootstrap rather than fail startup.
     if (process.env.NODE_ENV === 'production' && isPoolTimeoutError(error)) {
       console.warn('Skipping default admin bootstrap due to Prisma connection pool timeout.');
       return null;
     }
 
+    // For other errors, fail startup loudly to alert developers
     throw error;
   });
 

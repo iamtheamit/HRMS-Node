@@ -55,8 +55,11 @@ const originPatterns = corsOrigins
 
 const exactAllowedOrigins = new Set(originPatterns.filter((pattern) => !pattern.includes('*')).map(normalizeOrigin));
 const wildcardOriginPatterns = originPatterns.filter((pattern) => pattern.includes('*'));
+// Optional: Allow all Vercel preview deployment origins (*.vercel.app)
+// Useful when testing with multiple preview branches, but can be disabled for stricter CORS
 const allowVercelPreviewOrigins = parseBoolean(process.env.CORS_ALLOW_VERCEL_PREVIEWS, false);
 
+// Checks if a normalized origin matches a wildcard pattern (e.g., https://*.ngrok-free.app)
 const matchesWildcardOrigin = (normalizedOrigin, pattern) => {
   if (pattern === '*') return true;
 
@@ -96,6 +99,7 @@ const isAllowedOrigin = (normalizedOrigin) => {
   return wildcardOriginPatterns.some((pattern) => matchesWildcardOrigin(normalizedOrigin, pattern));
 };
 
+// Detects if an origin is a Vercel preview deployment (dynamically generated URLs)
 const isVercelPreviewOrigin = (origin) => {
   try {
     const parsed = new URL(origin);
