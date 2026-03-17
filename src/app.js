@@ -165,6 +165,10 @@ const corsOptions = {
       return callback(null, true);
     }
 
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
+};
+
 // Configure CORS with detailed logging
 logger.info('Configuring CORS with allowed origins', {
   exactOrigins: Array.from(exactAllowedOrigins),
@@ -198,11 +202,7 @@ app.use(morgan(morganFormat, {
       logger.info(message.trim());
     },
   },
-}ions));
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+}));
 
 app.get('/health', (req, res) => {
   res.status(200).json({
