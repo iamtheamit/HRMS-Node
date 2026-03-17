@@ -14,7 +14,7 @@ const { AUTH_MESSAGES } = require('../constants/messages');
 const { ROLE_DEFAULT_PERMISSIONS } = require('../constants/permissions');
 const emailService = require('./email/email.service');
 const logger = require('../utils/logger');
-const { frontendUrl } = require('../config/app');
+const { frontendUrl, apiBaseUrl } = require('../config/app');
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRES = '15m';
@@ -80,8 +80,8 @@ const register = async ({ email, password, role = 'EMPLOYEE', firstName, lastNam
   const { password: _, ...safeUser } = user;
   // Send activation email and await delivery attempt (important on serverless runtimes).
   try {
-    const appUrl = String(frontendUrl || process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-    const activationLink = `${appUrl}/api/auth/activate?token=${activationToken}`;
+    const baseApiUrl = String(apiBaseUrl || process.env.API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const activationLink = `${baseApiUrl}/api/auth/activate?token=${activationToken}`;
     await emailService.sendAccountActivationEmail(user, activationLink);
     logger.info('[AUTH] Registration activation email sent', {
       userId: user.id,

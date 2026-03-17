@@ -10,8 +10,23 @@ const { SECURITY_MESSAGES } = require('../constants/messages');
 
 const API_KEY_HEADER = 'x-api-key';
 
+const shouldBypassApiKey = (req) => {
+  const method = String(req.method || '').toUpperCase();
+  const path = String(req.path || '').toLowerCase();
+
+  // Activation links are opened directly in browsers and cannot include custom headers.
+  return method === 'GET' && path === '/auth/activate';
+};
+
 // Middleware function that validates the incoming request API key
 const apiKeyMiddleware = (req, res, next) => {
+  if (shouldBypassApiKey(req)) {
+    logger.debug('[SECURITY] API key validation bypassed for browser activation link', {
+      endpoint: `${req.method} ${req.path}`,
+    });
+    return next();
+  }
+
   const configuredApiKey = String(process.env.API_SECRET_KEY || '').trim();
 
   // Log the endpoint being accessed

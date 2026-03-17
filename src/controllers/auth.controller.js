@@ -13,6 +13,7 @@ const {
   accessTokenCookieOptions,
   refreshTokenCookieOptions,
   clearCookieOptions,
+  frontendUrl,
 } = require('../config/app');
 
 const setAuthCookies = (res, tokens) => {
@@ -108,9 +109,9 @@ const activateAccount = async (req, res, next) => {
 
     // If this was triggered by a browser GET (e.g. user clicked emailed link), redirect to frontend
     if (req.method && req.method.toUpperCase() === 'GET') {
-      const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`;
+      const appUrl = String(frontendUrl || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
       // Redirect to frontend login page with a flag indicating activation succeeded
-      return res.redirect(`${appUrl.replace(/\/$/, '')}/login?activated=1`);
+      return res.redirect(`${appUrl}/login?activated=1`);
     }
 
     return sendSuccess(res, AUTH_MESSAGES.ACTIVATION_SUCCESS, null, StatusCodes.OK);
