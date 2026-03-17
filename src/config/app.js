@@ -33,9 +33,23 @@ const normalizeCookieDomain = (value) => {
   return normalized;
 };
 
+const normalizePublicBaseUrl = (value, fallback) => {
+  const raw = String(value || '').trim();
+  const fallbackUrl = String(fallback || '').trim();
+  if (!raw) return fallbackUrl;
+
+  const ensureProtocol = (input) => (/^https?:\/\//i.test(input) ? input : `https://${input}`);
+
+  try {
+    return new URL(ensureProtocol(raw)).origin;
+  } catch (error) {
+    return fallbackUrl;
+  }
+};
+
 const port = parsePositiveInteger(process.env.PORT, DEFAULT_PORT);
-const apiBaseUrl = process.env.API_BASE_URL || `http://localhost:${port}`;
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const apiBaseUrl = normalizePublicBaseUrl(process.env.API_BASE_URL, `http://localhost:${port}`);
+const frontendUrl = normalizePublicBaseUrl(process.env.FRONTEND_URL, 'http://localhost:3000');
 
 const accessTokenCookieName = process.env.ACCESS_TOKEN_COOKIE_NAME || 'hrms_access_token';
 const refreshTokenCookieName = process.env.REFRESH_TOKEN_COOKIE_NAME || 'hrms_refresh_token';
