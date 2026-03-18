@@ -77,6 +77,10 @@ const createEmployee = async (payload) => {
       throw new ApiError(StatusCodes.CONFLICT, AUTH_MESSAGES.EMAIL_ALREADY_REGISTERED);
     }
 
+    const temporaryPassword = generateTemporaryPassword();
+    const hashedPassword = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
+    const activationToken = crypto.randomBytes(24).toString('hex');
+
     const employee = await employeeRepository.createEmployeeForExistingUser({
       employeeData: {
         ...normalizedPayload,
@@ -86,8 +90,24 @@ const createEmployee = async (payload) => {
         firstName: normalizedPayload.firstName,
         lastName: normalizedPayload.lastName,
         role,
+        password: hashedPassword,
+        isActive: false,
+        activationToken,
       },
     });
+
+    const activationLink = `${apiBaseUrl.replace(/\/$/, '')}/api/auth/activate?token=${activationToken}`;
+
+    try {
+      await emailService.sendAccountActivationEmail(employee.user, activationLink, temporaryPassword);
+      logger.info('[EMPLOYEE] Activation email resent for employee linked to existing user', {
+        employeeId: employee.id,
+        userId: employee.user?.id,
+        email: employee.user?.email,
+      });
+    } catch (err) {
+      logger.error('[EMPLOYEE] Failed to send activation email for employee linked to existing user', err);
+    }
 
     return employee;
   }

@@ -116,6 +116,11 @@ const activateAccount = async (req, res, next) => {
 
     return sendSuccess(res, AUTH_MESSAGES.ACTIVATION_SUCCESS, null, StatusCodes.OK);
   } catch (err) {
+    if (req.method && req.method.toUpperCase() === 'GET') {
+      const appUrl = String(frontendUrl || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+      return res.redirect(`${appUrl}/login?activation=invalid`);
+    }
+
     return next(err);
   }
 };

@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
 const provider = require('./email.provider');
+const EMAIL_TEMPLATES = require('./email.templates');
 const { frontendUrl } = require('../../config/app');
 const logger = require('../../utils/logger');
 
@@ -24,19 +25,36 @@ function render(template, vars = {}) {
 
 async function sendAccountActivationEmail(user, activationLink, temporaryPassword) {
   try {
-    const tpl = await loadTemplate('accountActivation');
-    const temporaryPasswordSection = temporaryPassword
-      ? `<p><strong>Temporary Password:</strong> ${temporaryPassword}</p>
-         <p>Please sign in with this password and update it after your first login.</p>`
-      : '';
+    const hasTemporaryPassword = Boolean(temporaryPassword);
+    const templateName = hasTemporaryPassword
+      ? EMAIL_TEMPLATES.ACCOUNT_ACTIVATION_WITH_TEMP
+      : EMAIL_TEMPLATES.ACCOUNT_ACTIVATION;
+    const tpl = await loadTemplate(templateName);
+    const safeName = user.firstName || user.email;
+    const text = [
+      `Hello ${safeName},`,
+      '',
+      'Your HRMS account has been created.',
+      hasTemporaryPassword ? `Temporary password: ${temporaryPassword}` : 'Use your existing password after activation.',
+      `Activate your account here: ${activationLink}`,
+      '',
+      'After activation, sign in and change your password.',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const html = render(tpl, {
-      name: user.firstName || user.email,
+      name: safeName,
       activationLink,
       loginLink: `${String(frontendUrl || '').replace(/\/$/, '')}/login`,
-      temporaryPasswordSection,
+      temporaryPassword: temporaryPassword || '',
     });
-    await provider.sendEmail({ to: user.email, subject: 'Activate your HRMS account', html });
+    await provider.sendEmail({
+      to: user.email,
+      subject: 'Activate your HRMS account',
+      html,
+      text,
+    });
   } catch (err) {
     logger.error('[EMAIL] sendAccountActivationEmail failed', err);
     throw err;
@@ -45,7 +63,7 @@ async function sendAccountActivationEmail(user, activationLink, temporaryPasswor
 
 async function sendResetPasswordEmail(user, resetLink) {
   try {
-    const tpl = await loadTemplate('resetPassword');
+    const tpl = await loadTemplate(EMAIL_TEMPLATES.RESET_PASSWORD);
     const html = render(tpl, { name: user.firstName || user.email, resetLink });
     await provider.sendEmail({ to: user.email, subject: 'Reset your HRMS password', html });
   } catch (err) {
@@ -56,8 +74,11 @@ async function sendResetPasswordEmail(user, resetLink) {
 
 async function sendWelcomeEmail(user) {
   try {
-    const tpl = await loadTemplate('welcome');
-    const html = render(tpl, { name: user.firstName || user.email });
+    const tpl = await loadTemplate(EMAIL_TEMPLATES.WELCOME);
+    const html = render(tpl, {
+      name: user.firstName || user.email,
+      loginLink: `${String(frontendUrl || '').replace(/\/$/, '')}/login`,
+    });
     await provider.sendEmail({ to: user.email, subject: 'Welcome to HRMS', html });
   } catch (err) {
     logger.error('[EMAIL] sendWelcomeEmail failed', err);

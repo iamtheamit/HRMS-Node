@@ -176,6 +176,10 @@ const logoutAll = async (userId) => {
 };
 
 const activateAccount = async (activationToken) => {
+  if (!activationToken) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, AUTH_MESSAGES.INVALID_ACTIVATION_TOKEN);
+  }
+
   const user = await authRepository.findUserByActivationToken(activationToken);
   if (!user) throw new ApiError(StatusCodes.BAD_REQUEST, AUTH_MESSAGES.INVALID_ACTIVATION_TOKEN);
   await authRepository.updateUser(user.id, { isActive: true, activationToken: null });
@@ -224,10 +228,10 @@ const resendActivationEmail = async (email) => {
 const requestPasswordReset = async (email) => {
   const user = await authRepository.findUserByEmail(email);
   if (!user) {
-    logger.info('[AUTH] Password reset requested for non-existing user (ignored to prevent email enumeration)', {
+    logger.info('[AUTH] Password reset requested for non-existing user', {
       email,
     });
-    return;
+    throw new ApiError(StatusCodes.NOT_FOUND, AUTH_MESSAGES.EMAIL_NOT_REGISTERED);
   }
 
   const token = crypto.randomBytes(24).toString('hex');

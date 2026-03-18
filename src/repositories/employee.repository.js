@@ -72,6 +72,11 @@ const createEmployeeForExistingUser = ({ employeeData, userId, userData }) => {
         firstName: userData.firstName,
         lastName: userData.lastName,
         role: userData.role,
+        ...(userData.password ? { password: userData.password } : {}),
+        ...(typeof userData.isActive === 'boolean' ? { isActive: userData.isActive } : {}),
+        ...(Object.prototype.hasOwnProperty.call(userData, 'activationToken')
+          ? { activationToken: userData.activationToken }
+          : {}),
       },
     });
 
