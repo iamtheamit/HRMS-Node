@@ -29,6 +29,14 @@ async function sendAccountActivationEmail(user, activationLink, temporaryPasswor
     const templateName = hasTemporaryPassword
       ? EMAIL_TEMPLATES.ACCOUNT_ACTIVATION_WITH_TEMP
       : EMAIL_TEMPLATES.ACCOUNT_ACTIVATION;
+
+    logger.info('[EMAIL] Preparing account activation email', {
+      email: user?.email,
+      templateName,
+      hasTemporaryPassword,
+      temporaryPasswordLength: temporaryPassword ? String(temporaryPassword).length : 0,
+    });
+
     const tpl = await loadTemplate(templateName);
     const safeName = user.firstName || user.email;
     const text = [

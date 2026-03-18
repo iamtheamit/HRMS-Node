@@ -81,6 +81,11 @@ const createEmployee = async (payload) => {
     const hashedPassword = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
     const activationToken = crypto.randomBytes(24).toString('hex');
 
+    logger.info('[EMPLOYEE] Temporary password generated for existing-user employee flow', {
+      email: normalizedPayload.email,
+      temporaryPasswordLength: temporaryPassword.length,
+    });
+
     const employee = await employeeRepository.createEmployeeForExistingUser({
       employeeData: {
         ...normalizedPayload,
@@ -115,6 +120,11 @@ const createEmployee = async (payload) => {
   const temporaryPassword = generateTemporaryPassword();
   const hashedPassword = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
   const activationToken = crypto.randomBytes(24).toString('hex');
+
+  logger.info('[EMPLOYEE] Temporary password generated for new-user employee flow', {
+    email: normalizedPayload.email,
+    temporaryPasswordLength: temporaryPassword.length,
+  });
 
   const employee = await employeeRepository.createEmployeeWithUser({
     employeeData: {
