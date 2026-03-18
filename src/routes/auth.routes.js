@@ -269,6 +269,9 @@ router.post('/reset-password-request', authController.resetPasswordRequest);
  */
 router.post('/reset-password', authController.resetPassword);
 
+router.post('/change-password-otp-request', authMiddleware, authController.requestChangePasswordOtp);
+router.post('/change-password-with-otp', authMiddleware, authController.changePasswordWithOtp);
+
 // Support activation via emailed link (GET /api/auth/activate?token=...)
 router.get('/activate', authController.activateAccount);
 

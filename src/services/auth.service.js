@@ -230,6 +230,59 @@ const resetPassword = async (token, newPassword) => {
   return true;
 };
 
+const requestChangePasswordOtp = async (userId) => {
+  const user = await authRepository.findUserById(userId);
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+  await authRepository.updateUser(user.id, {
+    resetToken: otp,
+    resetTokenExpiry: expiry,
+  });
+
+  logger.info('[AUTH] Sending change-password OTP email', {
+    userId: user.id,
+    email: user.email,
+    expiresAt: expiry.toISOString(),
+  });
+
+  await emailService.sendPasswordChangeOtpEmail(user, otp);
+  return true;
+};
+
+const changePasswordWithOtp = async (userId, { currentPassword, otp, newPassword }) => {
+  const user = await authRepository.findUserById(userId);
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+
+  if (!currentPassword || !newPassword || !otp) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Current password, OTP, and new password are required');
+  }
+
+  if (String(newPassword).length < 8) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'New password must be at least 8 characters long');
+  }
+
+  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isCurrentPasswordValid) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, AUTH_MESSAGES.CURRENT_PASSWORD_INVALID);
+  }
+
+  if (!user.resetToken || !user.resetTokenExpiry || new Date() > user.resetTokenExpiry || user.resetToken !== String(otp)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, AUTH_MESSAGES.INVALID_CHANGE_PASSWORD_OTP);
+  }
+
+  const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await authRepository.updateUser(user.id, {
+    password: hashed,
+    resetToken: null,
+    resetTokenExpiry: null,
+  });
+
+  return true;
+};
+
 // Permission helpers
 const userHasPermission = async (userId, permissionName) => {
   // SUPER_ADMIN always allowed
@@ -257,6 +310,8 @@ module.exports = {
   activateAccount,
   requestPasswordReset,
   resetPassword,
+  requestChangePasswordOtp,
+  changePasswordWithOtp,
   userHasPermission,
   getUserById,
 };

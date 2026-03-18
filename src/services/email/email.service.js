@@ -65,8 +65,35 @@ async function sendWelcomeEmail(user) {
   }
 }
 
+async function sendPasswordChangeOtpEmail(user, otp) {
+  try {
+    const safeName = user.firstName || user.email;
+    const html = `
+      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.5;color:#0f172a;max-width:560px;margin:0 auto;padding:24px;">
+        <h2 style="margin:0 0 12px;">Password Change Verification</h2>
+        <p>Hello ${safeName},</p>
+        <p>Use the OTP below to verify your password change request. This code expires in 10 minutes.</p>
+        <div style="margin:16px 0;padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:24px;font-weight:700;letter-spacing:4px;display:inline-block;">
+          ${otp}
+        </div>
+        <p>If you did not request this change, please ignore this email and secure your account.</p>
+      </div>
+    `;
+
+    await provider.sendEmail({
+      to: user.email,
+      subject: 'Your HRMS password change OTP',
+      html,
+    });
+  } catch (err) {
+    logger.error('[EMAIL] sendPasswordChangeOtpEmail failed', err);
+    throw err;
+  }
+}
+
 module.exports = {
   sendAccountActivationEmail,
   sendResetPasswordEmail,
   sendWelcomeEmail,
+  sendPasswordChangeOtpEmail,
 };

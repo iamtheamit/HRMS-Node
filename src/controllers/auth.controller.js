@@ -140,6 +140,25 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+const requestChangePasswordOtp = async (req, res, next) => {
+  try {
+    await authService.requestChangePasswordOtp(req.user.userId);
+    return sendSuccess(res, AUTH_MESSAGES.CHANGE_PASSWORD_OTP_SENT, null, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const changePasswordWithOtp = async (req, res, next) => {
+  try {
+    const { currentPassword, otp, newPassword } = req.body;
+    await authService.changePasswordWithOtp(req.user.userId, { currentPassword, otp, newPassword });
+    return sendSuccess(res, AUTH_MESSAGES.CHANGE_PASSWORD_SUCCESS, null, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -149,6 +168,8 @@ module.exports = {
   activateAccount,
   resetPasswordRequest,
   resetPassword,
+  requestChangePasswordOtp,
+  changePasswordWithOtp,
   getMe,
 };
 

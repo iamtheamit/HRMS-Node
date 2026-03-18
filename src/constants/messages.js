@@ -19,6 +19,10 @@ const AUTH_MESSAGES = {
   RESET_REQUEST_SUCCESS: 'If the email exists, a reset link has been sent',
   RESET_SUCCESS: 'Password has been reset successfully',
   INVALID_RESET_TOKEN: 'Invalid or expired reset token',
+  CHANGE_PASSWORD_OTP_SENT: 'OTP has been sent to your registered email',
+  CHANGE_PASSWORD_SUCCESS: 'Password changed successfully',
+  INVALID_CHANGE_PASSWORD_OTP: 'Invalid or expired OTP',
+  CURRENT_PASSWORD_INVALID: 'Current password is incorrect',
   REFRESH_EXPIRED: 'Refresh token expired',
 };
 
