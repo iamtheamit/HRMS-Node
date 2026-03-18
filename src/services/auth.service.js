@@ -207,15 +207,25 @@ const resendActivationEmail = async (email) => {
 
   // Generate a new activation token
   const activationToken = crypto.randomBytes(24).toString('hex');
-  await authRepository.updateUser(user.id, { activationToken });
+  let temporaryPassword;
+  const updatePayload = { activationToken, isActive: false };
+
+  // For employee accounts, issue a fresh temporary password when resending activation.
+  if (user.employee) {
+    temporaryPassword = `Tmp@${crypto.randomBytes(6).toString('base64url')}${crypto.randomBytes(6).toString('hex')}`;
+    updatePayload.password = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
+  }
+
+  await authRepository.updateUser(user.id, updatePayload);
 
   try {
     const baseApiUrl = String(apiBaseUrl || process.env.API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
     const activationLink = `${baseApiUrl}/api/auth/activate?token=${activationToken}`;
-    await emailService.sendAccountActivationEmail(user, activationLink);
+    await emailService.sendAccountActivationEmail(user, activationLink, temporaryPassword);
     logger.info('[AUTH] Resend activation email sent', {
       userId: user.id,
       email: user.email,
+      hasTemporaryPassword: Boolean(temporaryPassword),
     });
   } catch (err) {
     logger.error('[AUTH] Resend activation email failed', err);
