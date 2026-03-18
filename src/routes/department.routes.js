@@ -96,4 +96,10 @@ router.put(
   departmentController.updateDepartment,
 );
 
+router.patch(
+  '/:id/assign-employees',
+  permissionMiddleware(PERMISSIONS.DEPARTMENT_UPDATE),
+  departmentController.assignDepartmentEmployees,
+);
+
 module.exports = router;

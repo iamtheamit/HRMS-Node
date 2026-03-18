@@ -127,6 +127,28 @@ const getEmployeeById = (id) => {
   });
 };
 
+const getEmployeesByIds = (ids = []) => {
+  return prisma.employee.findMany({
+    where: {
+      id: { in: ids },
+      deletedAt: null,
+    },
+    include: employeeInclude,
+  });
+};
+
+const assignEmployeesToDepartment = (departmentId, employeeIds = []) => {
+  return prisma.employee.updateMany({
+    where: {
+      id: { in: employeeIds },
+      deletedAt: null,
+    },
+    data: {
+      departmentId,
+    },
+  });
+};
+
 const updateEmployee = (id, data) => {
   return prisma.employee.update({
     where: { id },
@@ -167,6 +189,8 @@ module.exports = {
   getEmployees,
   getSubordinates,
   getEmployeeById,
+  getEmployeesByIds,
+  assignEmployeesToDepartment,
   updateEmployee,
   deleteEmployee,
   updateEmployeeLifecycle,

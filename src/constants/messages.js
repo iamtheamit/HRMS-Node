@@ -37,6 +37,7 @@ const DEPARTMENT_MESSAGES = {
   CREATE_SUCCESS: 'Department created successfully',
   FETCH_ALL_SUCCESS: 'Departments fetched successfully',
   UPDATE_SUCCESS: 'Department updated successfully',
+  ASSIGN_SUCCESS: 'Employees assigned to department successfully',
   NOT_FOUND: 'Department not found',
   NAME_EXISTS: 'Department name already exists',
   HEAD_MUST_BELONG_TO_DEPARTMENT: 'Department head must belong to this department',

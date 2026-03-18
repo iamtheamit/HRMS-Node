@@ -87,8 +87,43 @@ const updateDepartment = async (id, payload) => {
   return departmentRepository.updateDepartment(id, updates);
 };
 
+const assignEmployees = async (departmentId, employeeIds = []) => {
+  if (!isUuid(departmentId)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid department id');
+  }
+
+  const existingDepartment = await departmentRepository.getDepartmentById(departmentId);
+  if (!existingDepartment) {
+    throw new ApiError(StatusCodes.NOT_FOUND, DEPARTMENT_MESSAGES.NOT_FOUND);
+  }
+
+  if (!Array.isArray(employeeIds)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'employeeIds must be an array');
+  }
+
+  const normalizedEmployeeIds = Array.from(
+    new Set(employeeIds.map((id) => String(id || '').trim()).filter(Boolean)),
+  );
+
+  if (!normalizedEmployeeIds.every((id) => isUuid(id))) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'One or more employee ids are invalid');
+  }
+
+  if (normalizedEmployeeIds.length > 0) {
+    const existingEmployees = await employeeRepository.getEmployeesByIds(normalizedEmployeeIds);
+    if (existingEmployees.length !== normalizedEmployeeIds.length) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'One or more employees were not found');
+    }
+
+    await employeeRepository.assignEmployeesToDepartment(departmentId, normalizedEmployeeIds);
+  }
+
+  return departmentRepository.getDepartmentById(departmentId);
+};
+
 module.exports = {
   listDepartments,
   createDepartment,
   updateDepartment,
+  assignEmployees,
 };

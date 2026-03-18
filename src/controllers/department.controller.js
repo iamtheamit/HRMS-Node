@@ -2,7 +2,11 @@ const departmentService = require('../services/department.service');
 const { sendSuccess } = require('../utils/apiResponse');
 const StatusCodes = require('../constants/statusCodes');
 const { DEPARTMENT_MESSAGES } = require('../constants/messages');
-const { CreateDepartmentDTO, UpdateDepartmentDTO } = require('../dtos/department.dto');
+const {
+  CreateDepartmentDTO,
+  UpdateDepartmentDTO,
+  AssignDepartmentEmployeesDTO,
+} = require('../dtos/department.dto');
 
 const getDepartments = async (req, res, next) => {
   try {
@@ -33,8 +37,19 @@ const updateDepartment = async (req, res, next) => {
   }
 };
 
+const assignDepartmentEmployees = async (req, res, next) => {
+  try {
+    const dto = new AssignDepartmentEmployeesDTO(req.body);
+    const department = await departmentService.assignEmployees(req.params.id, dto.employeeIds || []);
+    return sendSuccess(res, DEPARTMENT_MESSAGES.ASSIGN_SUCCESS, department, StatusCodes.OK);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   getDepartments,
   createDepartment,
   updateDepartment,
+  assignDepartmentEmployees,
 };

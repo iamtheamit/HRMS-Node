@@ -12,7 +12,14 @@ class UpdateDepartmentDTO extends BaseDTO {
   }
 }
 
+class AssignDepartmentEmployeesDTO extends BaseDTO {
+  constructor(data) {
+    super(data, ['employeeIds']);
+  }
+}
+
 module.exports = {
   CreateDepartmentDTO,
   UpdateDepartmentDTO,
+  AssignDepartmentEmployeesDTO,
 };
