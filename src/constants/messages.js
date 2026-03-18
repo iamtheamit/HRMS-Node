@@ -16,6 +16,7 @@ const AUTH_MESSAGES = {
   ACCOUNT_INACTIVE: 'Account is not activated',
   ACTIVATION_SUCCESS: 'Account activated successfully',
   INVALID_ACTIVATION_TOKEN: 'Invalid activation token',
+  ACTIVATION_EMAIL_RESENT: 'Activation email has been resent to your email address',
   RESET_REQUEST_SUCCESS: 'If the email exists, a reset link has been sent',
   RESET_SUCCESS: 'Password has been reset successfully',
   INVALID_RESET_TOKEN: 'Invalid or expired reset token',

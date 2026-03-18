@@ -182,6 +182,45 @@ const activateAccount = async (activationToken) => {
   return true;
 };
 
+const resendActivationEmail = async (email) => {
+  const user = await authRepository.findUserByEmail(email);
+  if (!user) {
+    logger.info('[AUTH] Resend activation requested for non-existing user (ignored to prevent email enumeration)', {
+      email,
+    });
+    // Return success to prevent email enumeration
+    return true;
+  }
+
+  if (user.isActive) {
+    logger.info('[AUTH] Resend activation requested for already active user', {
+      userId: user.id,
+      email: user.email,
+    });
+    // Return success to prevent information leakage
+    return true;
+  }
+
+  // Generate a new activation token
+  const activationToken = crypto.randomBytes(24).toString('hex');
+  await authRepository.updateUser(user.id, { activationToken });
+
+  try {
+    const baseApiUrl = String(apiBaseUrl || process.env.API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const activationLink = `${baseApiUrl}/api/auth/activate?token=${activationToken}`;
+    await emailService.sendAccountActivationEmail(user, activationLink);
+    logger.info('[AUTH] Resend activation email sent', {
+      userId: user.id,
+      email: user.email,
+    });
+  } catch (err) {
+    logger.error('[AUTH] Resend activation email failed', err);
+    throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to send activation email');
+  }
+
+  return true;
+};
+
 const requestPasswordReset = async (email) => {
   const user = await authRepository.findUserByEmail(email);
   if (!user) {
@@ -308,6 +347,7 @@ module.exports = {
   logout,
   logoutAll,
   activateAccount,
+  resendActivationEmail,
   requestPasswordReset,
   resetPassword,
   requestChangePasswordOtp,

@@ -159,6 +159,19 @@ const changePasswordWithOtp = async (req, res, next) => {
   }
 };
 
+const resendActivationEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return sendSuccess(res, AUTH_MESSAGES.ACTIVATION_EMAIL_RESENT, null, StatusCodes.OK);
+    }
+    await authService.resendActivationEmail(email);
+    return sendSuccess(res, AUTH_MESSAGES.ACTIVATION_EMAIL_RESENT, null, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -166,6 +179,7 @@ module.exports = {
   logout,
   logoutAll,
   activateAccount,
+  resendActivationEmail,
   resetPasswordRequest,
   resetPassword,
   requestChangePasswordOtp,

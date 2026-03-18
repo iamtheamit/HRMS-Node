@@ -217,6 +217,32 @@ router.post('/activate-account', authController.activateAccount);
 
 /**
  * @swagger
+ * /api/auth/resend-activation-email:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Resend account activation email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Activation email resent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
+router.post('/resend-activation-email', authController.resendActivationEmail);
+
+/**
+ * @swagger
  * /api/auth/reset-password-request:
  *   post:
  *     tags: [Auth]
