@@ -6,7 +6,11 @@ const attendanceService = require('../services/attendance.service');
 const { sendSuccess } = require('../utils/apiResponse');
 const StatusCodes = require('../constants/statusCodes');
 const { ATTENDANCE_MESSAGES } = require('../constants/messages');
-const { AttendanceFilterDTO } = require('../dtos/attendance.dto');
+const {
+  AttendanceFilterDTO,
+  UpdateAttendanceStatusDTO,
+  MarkAttendanceDTO,
+} = require('../dtos/attendance.dto');
 
 const checkIn = async (req, res, next) => {
   try {
@@ -57,10 +61,37 @@ const listAttendance = async (req, res, next) => {
   }
 };
 
+const updateAttendanceStatus = async (req, res, next) => {
+  try {
+    const dto = new UpdateAttendanceStatusDTO(req.body);
+    const record = await attendanceService.updateAttendanceStatus(req.params.id, dto.status, req.user);
+    return sendSuccess(
+      res,
+      ATTENDANCE_MESSAGES.STATUS_UPDATE_SUCCESS,
+      record,
+      StatusCodes.OK,
+    );
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const markAttendance = async (req, res, next) => {
+  try {
+    const dto = new MarkAttendanceDTO(req.body);
+    const record = await attendanceService.markAttendance(dto, req.user);
+    return sendSuccess(res, ATTENDANCE_MESSAGES.MARK_SUCCESS, record, StatusCodes.OK);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   checkIn,
   checkOut,
   punch,
   listAttendance,
+  updateAttendanceStatus,
+  markAttendance,
 };
 

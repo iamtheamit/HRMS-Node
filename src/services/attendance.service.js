@@ -8,6 +8,8 @@ const ApiError = require('../utils/apiError');
 const StatusCodes = require('../constants/statusCodes');
 const { ATTENDANCE_MESSAGES } = require('../constants/messages');
 
+const ATTENDANCE_STATUSES = new Set(['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY']);
+
 const getDayRange = (date = new Date()) => {
   const start = new Date(date);
   start.setHours(0, 0, 0, 0);
@@ -137,10 +139,97 @@ const listAttendance = async (filters = {}, actor) => {
   return records;
 };
 
+const assertAttendanceStatus = (status) => {
+  if (!ATTENDANCE_STATUSES.has(status)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid attendance status');
+  }
+};
+
+const assertCanManageAttendance = async (actor, targetEmployeeId) => {
+  if (!actor) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized');
+  }
+
+  if (actor.role === 'SUPER_ADMIN' || actor.role === 'HR_ADMIN') {
+    return;
+  }
+
+  if (actor.role !== 'MANAGER' || !actor.employeeId) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden');
+  }
+
+  if (targetEmployeeId === actor.employeeId) {
+    return;
+  }
+
+  const subordinates = await employeeRepository.getSubordinates(actor.employeeId);
+  const allowedIds = subordinates.map((employee) => employee.id);
+
+  if (!allowedIds.includes(targetEmployeeId)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Forbidden: outside your team scope');
+  }
+};
+
+const updateAttendanceStatus = async (attendanceId, status, actor) => {
+  assertAttendanceStatus(status);
+
+  const existing = await attendanceRepository.findAttendanceById(attendanceId);
+  if (!existing) {
+    throw new ApiError(StatusCodes.NOT_FOUND, ATTENDANCE_MESSAGES.NOT_FOUND);
+  }
+
+  await assertCanManageAttendance(actor, existing.employeeId);
+
+  const patch = { status };
+  if (status === 'ABSENT') {
+    patch.checkIn = null;
+    patch.checkOut = null;
+  }
+
+  return attendanceRepository.updateAttendance(attendanceId, patch);
+};
+
+const markAttendance = async (payload, actor) => {
+  const { employeeId, date, status } = payload || {};
+
+  if (!employeeId || !date) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Employee and date are required');
+  }
+
+  assertAttendanceStatus(status);
+
+  const employee = await employeeRepository.getEmployeeById(employeeId);
+  if (!employee) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Employee not found');
+  }
+
+  await assertCanManageAttendance(actor, employeeId);
+
+  const { start, end } = getDayRange(date);
+  const existing = await attendanceRepository.findAttendanceByEmployeeAndDate(employeeId, start, end);
+
+  if (existing) {
+    return updateAttendanceStatus(existing.id, status, actor);
+  }
+
+  const recordDate = new Date(start);
+  const checkIn = status === 'ABSENT' ? null : new Date(start);
+
+  return attendanceRepository.createAttendance({
+    employeeId,
+    date: recordDate,
+    status,
+    checkIn,
+    checkOut: null,
+  });
+};
+
 module.exports = {
   checkIn,
   checkOut,
   punch,
   listAttendance,
+  updateAttendanceStatus,
+  markAttendance,
 };
 

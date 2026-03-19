@@ -10,7 +10,25 @@ class AttendanceFilterDTO extends BaseDTO {
   }
 }
 
+class UpdateAttendanceStatusDTO extends BaseDTO {
+  constructor(data) {
+    super(data, ['status']);
+  }
+}
+
+class MarkAttendanceDTO extends BaseDTO {
+  constructor(data) {
+    super(data, ['employeeId', 'date', 'status']);
+
+    if (this.date) {
+      this.date = new Date(this.date);
+    }
+  }
+}
+
 module.exports = {
   AttendanceFilterDTO,
+  UpdateAttendanceStatusDTO,
+  MarkAttendanceDTO,
 };
 

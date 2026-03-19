@@ -53,9 +53,12 @@ const ATTENDANCE_MESSAGES = {
   CHECK_OUT_SUCCESS: 'Check-out successful',
   PUNCH_SUCCESS: 'Attendance updated successfully',
   FETCH_ALL_SUCCESS: 'Attendance records fetched successfully',
+  STATUS_UPDATE_SUCCESS: 'Attendance status updated successfully',
+  MARK_SUCCESS: 'Attendance marked successfully',
   ALREADY_CHECKED_IN: 'Employee already checked in for today',
   NO_CHECKIN_FOUND: 'No check-in record found for today',
   ALREADY_CHECKED_OUT: 'Employee already checked out for today',
+  NOT_FOUND: 'Attendance record not found',
 };
 
 const LEAVE_MESSAGES = {
@@ -65,6 +68,27 @@ const LEAVE_MESSAGES = {
   REJECT_SUCCESS: 'Leave request rejected successfully',
   NOT_FOUND: 'Leave request not found',
   ONLY_PENDING_MUTABLE: 'Only pending leave requests can be modified',
+};
+
+const TASK_MESSAGES = {
+  CREATE_SUCCESS: 'Task created successfully',
+  FETCH_ALL_SUCCESS: 'Tasks fetched successfully',
+  STATUS_UPDATE_SUCCESS: 'Task status updated successfully',
+  NOT_FOUND: 'Task not found',
+};
+
+const SALARY_MESSAGES = {
+  FETCH_ALL_SUCCESS: 'Salary records fetched successfully',
+  UPDATE_SUCCESS: 'Salary record updated successfully',
+  NOT_FOUND: 'Salary record not found',
+};
+
+const PAYROLL_MESSAGES = {
+  FETCH_ALL_SUCCESS: 'Payroll records fetched successfully',
+  PROCESS_SUCCESS: 'Payroll processed successfully',
+  PROCESS_ALL_SUCCESS: 'Draft payroll records processed successfully',
+  MARK_PAID_SUCCESS: 'Payroll marked as paid successfully',
+  NOT_FOUND: 'Payroll record not found',
 };
 
 const MEDIA_MESSAGES = {
@@ -89,6 +113,9 @@ module.exports = {
   DEPARTMENT_MESSAGES,
   ATTENDANCE_MESSAGES,
   LEAVE_MESSAGES,
+  TASK_MESSAGES,
+  SALARY_MESSAGES,
+  PAYROLL_MESSAGES,
   MEDIA_MESSAGES,
   SECURITY_MESSAGES,
   COMMON_MESSAGES,

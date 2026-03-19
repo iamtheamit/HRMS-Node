@@ -23,6 +23,7 @@ model User {
   resetToken         String?
   resetTokenExpiry   DateTime?
   employee  Employee?
+  createdTasks Task[]
   sessions  UserSession[]
   userPermissions UserPermission[]
   createdAt DateTime  @default(now())
@@ -61,11 +62,29 @@ model Employee {
   manager        Employee?      @relation("EmployeeManager", fields: [managerId], references: [id])
   subordinates   Employee[]     @relation("EmployeeManager")
   attendances    Attendance[]
+  salaryRecords  SalaryRecord[]
   leaveRequests  LeaveRequest[]
   approvedLeaves LeaveRequest[] @relation("LeaveApprover")
+  assignedTasks  Task[]         @relation("TaskAssignee")
   deletedAt      DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+}
+
+model Task {
+  id              String           @id @db.Uuid
+  title           String
+  description     String
+  assignedToId    String           @db.Uuid
+  assignedTo      Employee         @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdByUserId String           @db.Uuid
+  createdBy       User             @relation(fields: [createdByUserId], references: [id])
+  assignedByRole  TaskAssignerRole
+  dueDate         DateTime
+  priority        TaskPriority
+  status          TaskStatus       @default(TODO)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model Attendance {
@@ -92,6 +111,32 @@ model LeaveRequest {
   approver   Employee?    @relation("LeaveApprover", fields: [approverId], references: [id])
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+}
+
+model SalaryRecord {
+  id               String       @id @db.Uuid
+  employeeId       String       @db.Uuid
+  employee         Employee     @relation(fields: [employeeId], references: [id])
+  month            String
+  year             Int
+  workingDays      Int
+  payableDays      Int
+  status           SalaryStatus @default(DRAFT)
+  pfEmployeeRate   Float
+  pfEmployerRate   Float
+  esiRate          Float
+  tdsRate          Float
+  basic            Float
+  hra              Float
+  allowances       Float
+  bonus            Float
+  otherEarnings    Float
+  otherDeductions  Float
+  processedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([employeeId, month, year])
 }
 
 enum UserRole {
@@ -156,5 +201,29 @@ enum LeaveStatus {
   HR_PENDING
   APPROVED
   REJECTED
+}
+
+enum SalaryStatus {
+  DRAFT
+  PROCESSED
+  PAID
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TaskAssignerRole {
+  MANAGER
+  HR
 }
 
