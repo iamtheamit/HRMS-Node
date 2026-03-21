@@ -214,7 +214,22 @@ const getEmployee = async (id, actor) => {
 const updateEmployee = async (id, payload, actor) => {
   await getEmployee(id, actor);
   const normalizedPayload = normalizeEmployeePayload(payload);
-  const updated = await employeeRepository.updateEmployee(id, normalizedPayload);
+
+  const safePayload = actor?.role === 'EMPLOYEE'
+    ? Object.fromEntries(
+        Object.entries(normalizedPayload).filter(([key]) => [
+          'firstName',
+          'lastName',
+          'email',
+          'phone',
+          'countryCode',
+          'mobileNumber',
+          'profileUrl',
+        ].includes(key))
+      )
+    : normalizedPayload;
+
+  const updated = await employeeRepository.updateEmployee(id, safePayload);
   return updated;
 };
 

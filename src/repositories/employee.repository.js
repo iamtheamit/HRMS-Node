@@ -155,10 +155,42 @@ const assignEmployeesToDepartment = (departmentId, employeeIds = []) => {
 };
 
 const updateEmployee = (id, data) => {
-  return prisma.employee.update({
-    where: { id },
-    data,
-    include: employeeInclude,
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.employee.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    const employee = await tx.employee.update({
+      where: { id },
+      data,
+      include: employeeInclude,
+    });
+
+    if (current?.userId) {
+      const userPatch = {};
+
+      if (Object.prototype.hasOwnProperty.call(data, 'firstName')) {
+        userPatch.firstName = data.firstName;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(data, 'lastName')) {
+        userPatch.lastName = data.lastName;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(data, 'email')) {
+        userPatch.email = data.email;
+      }
+
+      if (Object.keys(userPatch).length > 0) {
+        await tx.user.update({
+          where: { id: current.userId },
+          data: userPatch,
+        });
+      }
+    }
+
+    return employee;
   });
 };
 
